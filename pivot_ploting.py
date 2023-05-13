@@ -9,9 +9,9 @@ from datetime import datetime
 
 #%% defining start date and end date of getting data
 
-def get_end_time(start_time:dt.datetime , delta_days:int):
+def get_end_time(start_time:dt.datetime , delta_days:int , delta_seconds:int , delta):
     start_ts = start_time.timestamp()
-    delta_t = float( dt.timedelta(delta_days,0).total_seconds() )
+    delta_t = float( dt.timedelta(delta_days,0 , m).total_seconds() )
     end_ts = delta_t + start_ts
     end_date = dt.datetime.fromtimestamp(end_ts).date()
     return end_date
@@ -51,7 +51,7 @@ def get_kline_as_df(symbol:str, interval:str ="15min" , reverse_df:bool = False,
         pd.DataFrame: dataframe object
     """   
     
-
+    
     cols = ["timestamp",'open','close','high','low','volume','turnover']
     df_temp = pd.DataFrame(columns = cols)
     
@@ -76,8 +76,14 @@ def get_kline_as_df(symbol:str, interval:str ="15min" , reverse_df:bool = False,
             # exits loop if we arrived at start_timestamp (smallest date)
             if ts_temp_end <= start_timestamp : break 
             
+            print("\n\nfirst datetime till now is: ",
+                dt.datetime.fromtimestamp( int(df_temp.iloc[0].timestamp) ),
+                "\nlast datetime till now is: ",
+                dt.datetime.fromtimestamp( int(df_temp.iloc[-1].timestamp) )
+                 )
+            
 
-        except Exception: 
+        except : 
         
             if ts_temp_end == ts_temp_last : # check if we got the data of new timestamp else exits loop
                 print("\n\n****final first datetime is: ",
@@ -87,19 +93,14 @@ def get_kline_as_df(symbol:str, interval:str ="15min" , reverse_df:bool = False,
                      )
                 print("\n\ndone")
                 break
-
-
-            print("\n\nfirst datetime till now is: ",
-                dt.datetime.fromtimestamp( int(df_temp.iloc[0].timestamp) ),
-                "\nlast datetime till now is: ",
-                dt.datetime.fromtimestamp( int(df_temp.iloc[-1].timestamp) )
-                    )
             
             time.sleep(10)
             continue
     
     df_temp["timestamp"] = df_temp.timestamp.astype("Int64")
     df_temp[df_temp.columns.to_list()[1:]] = df_temp[df_temp.columns.to_list()[1:]].astype("Float64") 
+    df_temp["datetime"] = pd.to_datetime(df_temp["timestamp"],unit = 's')
+    df_temp = df_temp[["timestamp","datetime",'open','close','high','low','volume','turnover']]
     return df_temp
 
 
@@ -109,14 +110,18 @@ btc_15min_df = get_kline_as_df("BTC-USDT", "15min" , False )
 
 #%% saving to excel
 btc_15min_df.to_excel("BTC-USDT|15min.xlsx")
+btc_15min_df.to_csv("BTC-USDT|15min.csv")
 #%% plot candlestick
+btc_15min_df_data = pd.read_csv("BTC-USDT|15min.csv")
 
-fig = go.Figure(data=[go.Candlestick(x = btc_15min_df['timestamp'],
-                open = btc_15min_df['open'],
-                high = btc_15min_df['high'],
-                low = btc_15min_df['low'],
-                close = btc_15min_df['close'])])
 
-fig.show()
+
+# fig = go.Figure(data=[go.Candlestick(x = btc_15min_df_data['datetime'],
+#                 open = btc_15min_df_data['open'],
+#                 high = btc_15min_df_data['high'],
+#                 low = btc_15min_df_data['low'],
+#                 close = btc_15min_df_data['close'])])
+
+# fig.show()
 
 # %%
