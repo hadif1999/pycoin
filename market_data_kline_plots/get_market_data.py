@@ -131,6 +131,7 @@ class get_market_data:
         elif "xlsx" in file_name : df = pd.read_excel(file_name)
         else : "file format must be .csv or .xlsx"
 
+        # converting format of data columns
         df["timestamp"] = df.timestamp.astype("Int64")
         df[df.columns.to_list()[1:]] = df[df.columns.to_list()[1:]].astype("Float64") 
         df["datetime"] = pd.to_datetime( df["timestamp"], unit = 's')
@@ -140,22 +141,97 @@ class get_market_data:
         return df
     
     
-    def group_klines(self, df:pd.DataFrame, **by):
-        """groups dataframe by "year", "month", "day" keyword args if specified.
+    def group_klines(self, df:pd.DataFrame, *by):
+        """groups dataframe by ("year", "month", "day") tuple arg if specified.
 
         Args:
             df (pd.DataFrame): input df
 
         Returns:
             _type_: group object
+            
+        example:
+            self.group_klines(df , ("year" , "month" , "day")) --> groups df by year, month, day
         """        
         grps = []
         
-        if "year" in by.keys(): grps.append(df["datetime"].dt.year)
-        if "month" in by.keys(): grps.append(df["datetime"].dt.month)
-        if "day" in by.keys(): grps.append(df["datetime"].dt.day)
+        
+        if "year" in by : grps.append(df["datetime"].dt.year) 
+        if "month" in by : grps.append(df["datetime"].dt.month)
+        if "day" in by : grps.append(df["datetime"].dt.day)
+        
+        if grps == []: 
+            raise Exception("at least one date parameter(year or month or day must be specified)")
         
         return df.groupby(grps)
+    
+    
+    def df2candlestick(df:pd.DataFrame, x:str = "datetime",open:str = 'open',close:str = 'close',high:str='high',
+                       low:str="low"):
+        """converts data frame data to candlestick format. name of needed columns must be specified.
+
+        Args:
+            df (pd.DataFrame): _description_
+            x (str, optional): name of time column in df (input dataframe) . Defaults to "datetime".
+            open (str, optional): name of open column in df. Defaults to 'open'.
+            close (str, optional): name of close column in df. Defaults to 'close'.
+            high (str, optional): // high //. Defaults to 'high'.
+            low (str, optional): // low // . Defaults to "low".
+
+        Returns:
+            _type_: candlestick data
+        """        
+        
+        return go.Candlestick(x = df[x],
+                open = df[open],
+                high = df[high],
+                low = df[low],
+                close = df[close])
+    
+    
+    
+    def plot_candlestick(self , dataframe:pd.DataFrame, **args):
+        """plots data as candlestick format. 
+
+        Args:
+            dataframe (pd.DataFrame): input dataframe with standard column names
+        """        
+        
+        get_grp = []
+        args = []
+        
+        if "year" in args.keys(): 
+            if type(args["year"]) == int: 
+                get_grp.append(args["year"])
+                args.append("year")
+            else: raise Exception("year arg must be int")
+            
+        if "month" in args.keys():
+            if type(args["month"]) == int: 
+                get_grp.append(args["month"])
+                args.append("month")
+            else: raise Exception("month arg must be int")
+            
+        
+        if "day" in args.keys():
+            if type(args["day"]) == int: 
+                get_grp.append(args["day"])
+                args.append("day")
+            else: raise Exception("day arg must be int")
+            
+        grps = self.group_klines(dataframe , args )
+        grp = grps.get_group( tuple(get_grp) )
+        
+        if "x" in args.keys() and "open" in args.keys() and "close" in args.keys() and "low" in args.keys() and "high" in args.keys():
+            fig = go.Figure(data=[ self.df2candlestick( dataframe,args["open"],args["close"],args["low"],args["high"] ) ])
+            fig.show()
+        
+        else:
+            fig = go.Figure(data=[ self.df2candlestick( dataframe ) ])
+            fig.show()
+        
+        
+
                
         
         
