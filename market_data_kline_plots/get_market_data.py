@@ -209,50 +209,44 @@ class get_market_data:
         """        
         if plot_by_grp:
             
-            get_grp = []
-            grp_by = []
+            get_grp = [] # this will keep selected group data
+            grp_by = ["year","month","day"] # this will keep what we want to grp_by
             
-            if "year" in args.keys(): # if there is a year arg uses it in group by later
-                if type(args["year"]) == int: 
-                    get_grp.append(args["year"])
-                    grp_by.append("year")
-                else: raise Exception("year arg must be int")
-                
-            if "month" in args.keys(): # same as year
-                if type(args["month"]) == int: 
-                    get_grp.append(args["month"])
-                    grp_by.append("month")
-                else: raise Exception("month arg must be int")
-                
             
-            if "day" in args.keys():
-                if type(args["day"]) == int: 
-                    get_grp.append(args["day"])
-                    grp_by.append("day")
-                else: raise Exception("day arg must be int")
-                
-                
+            for item in grp_by: # keeps the grp item if entered in fun args else removes from grp_by
+                if item in args.keys():
+                    if type(args[item]) == int :
+                        get_grp.append(args[item])
+                    else: raise Exception("year, month or day must be int!")
+                else: grp_by.remove(item)
+            
             
             grps = self.group_klines(dataframe , grp_by ) # group data by entered dates
             
             if len(get_grp) == 1 : grp = grps.get_group( get_grp[0] ) 
-            else: grp = grps.get_group( tuple(get_grp) ) # get specified grp of data 
+            else: grp = grps.get_group( tuple(get_grp) )      # get specified grp of data 
              
-            str_temp = str(grp_by)+" : "+str(get_grp)
+            str_temp = str(grp_by)+" : "+str(get_grp) 
             
-            
+            # if the name of df columns are not standard they will be specified here
             if "x" in args.keys() and "open" in args.keys() and "close" in args.keys() and "low" in args.keys() and "high" in args.keys():
-                fig = go.Figure(data=[ self.df2candlestick( grp, OPEN = args["open"], CLOSE = args["close"],
-                                                        LOW = args["low"], HIGH = args["high"] ) ])
+                candlestick_data = self.df2candlestick( grp, OPEN = args["open"], CLOSE = args["close"],
+                                                        LOW = args["low"], HIGH = args["high"] ) 
             
             else:
-                fig = go.Figure( data=[self.df2candlestick( grp )] )
+                candlestick_data = self.df2candlestick( grp )
                 
-                
-        # plot full data if plot_by_grp is False
+        
         else: 
-            fig = go.Figure( data=[self.df2candlestick( dataframe )] )
+            candlestick_data = self.df2candlestick( dataframe ) # plot full data if plot_by_grp is False
             str_temp = ""
+        
+        
+        fig = go.Figure( data = [candlestick_data] )
+        
+        # add titles and drag modes
+        fig.update_layout(title = self.symbol+'  ' + str_temp,
+                          yaxis_title = self.symbol, dragmode = "pan" )
         
         
         if "slider" in args.keys(): # add slider in x axis or not
@@ -261,15 +255,10 @@ class get_market_data:
             else: raise Exception("slider param can be bool")
         
         
-        
-        
-        if "size" in args.keys(): # changes fig size
-            if type(args["size"]) == list:
-                fig.update_layout( width = args["size"][0], height = args["size"][1],
-                                   title = self.symbol+'  ' + str_temp,
-                                   yaxis_title = self.symbol
-                                 )
-            else : raise Exception("fig size must be a 2 element list")
+        if "fig_size" in args.keys(): # changes fig size
+            if type(args["fig_size"]) == list:
+                fig.update_layout( width = args["fig_size"][0], height = args["fig_size"][1] )
+            else : raise Exception(" 'fig_size' must be a 2 element list")
             
         return fig
     
@@ -277,26 +266,31 @@ class get_market_data:
     
     
     def draw_line(self, fig:go.Figure, p0:List[float], p1:List[float], Color:str = "yellow",
-                  width:int = 2, text:str = "", text_position:str = "top right", **kwargs):
+                  width:int = 2, text_:str = "", font_size:int = 14,text_position:str = "top right", **kwargs):
         """draws a line on given plotly figure obj starting with point p0:(x0,y0) to p1: (x1,y1)
 
         Args:
-            fig (go.Figure): _description_
-            p0 (List[float]): _description_
-            p1 (List[float]): _description_
-            Color (str, optional): _description_. Defaults to "yellow".
-            width (int, optional): _description_. Defaults to 2.
-            text (str, optional): _description_. Defaults to "".
-            text_position (str, optional): _description_. Defaults to "top right".
+            fig (go.Figure): figure object
+            p0 (List[float]): first point of line
+            p1 (List[float]): second point of line
+            Color (str, optional): desired color for line. Defaults to "yellow".
+            width (int, optional): width of line. Defaults to 2.
+            text (str, optional): text on line. Defaults to "".
+            text_position (str, optional): position of text. Defaults to "top right".
         kwargs:
             line_dash : dash type ('dot' for example)
         """        
-        line_ = fig.add_shape(type="line", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1], 
-                      line = dict(color = Color, width = width) ,
-                      label = dict(text = text, textposition = text_position) 
-                     )
+        line_ = dict(color = Color, width = width)
+        label_ = dict(text = text_, textposition = text_position, font = dict(color="black",
+                                                                            family="Courier New, monospace",
+                                                                            size = font_size)) 
         
-        if "line_dash" in kwargs.keys(): line_.update_shapes(line = dict(dash = kwargs["line_dash"]))   
+        fig.add_shape(type="line", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1], 
+                      line = line_ , label = label_ ) 
+        
+        if "line_dash" in kwargs.keys(): 
+            line_["dash"] = kwargs["line_dash"]
+            fig.update_shapes(line = line_ )
         
 
     
@@ -320,7 +314,8 @@ class get_market_data:
         
         
     def draw_static_line(self, fig:go.Figure, side:str, c:float, 
-                         Color:str = "red", text:str = "", text_position:str = "top right" ):
+                         Color:str = "red", text:str = "", text_position:str = "top right", 
+                         width:int=2, font_size = 20, **kwargs ):
         
         """draw static lines with its value as c and a plotly object.
 
@@ -331,39 +326,43 @@ class get_market_data:
                 text: a text on line
                 text_position : position of text on line
         """        
+        line_ = dict(color = Color, width = width)
+        label_ = dict(text = text, textposition = text_position, font = dict(color="black",
+                                                                             family="Courier New, monospace",
+                                                                             size = font_size))
         
-        if side == "h" or side == "hor":  fig.add_hline(y = c, color = Color, line_dash = "dot",
-                                                        annotation_text = text, 
-                                                        annotation_position = text_position
-                                                        )
+        if side == "h" or side == "hor":  fig.add_hline( y = c, line = line_ , label = label_ )
         
-        elif side == "v" or side == "ver": fig.add_vline(x = c, color = Color, line_dash = "dot",
-                                                        annotation_text = text, 
-                                                        annotation_position = text_position )
+        elif side == "v" or side == "ver": fig.add_vline(x = c, line = line_ , label = label_ )
         
         else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal line or
                               'v' or 'ver' to draw vertical line.
                               """)
+        if "line_dash" in kwargs.keys(): fig.update_shapes(line = dict(dash = kwargs["line_dash"]))
        
         
         
         
-    def draw_static_box(self, fig:go.Figure, side:str, c0:float,c1:float ,
-                         Color:str = "red", text:str = "", text_position:str = "top right" ):
+    def draw_static_box(self, fig:go.Figure, side:str, c0:str,c1:str ,
+                         Color:str = "green", text:str = "", text_position:str = "top right" ):
         
-        if side == "h" or side == "hor": fig.add_hrect(y0 = c0, y1 = c1, color = Color, 
-                                                       line_dash = "dot", annotation_text = text,
+        if side == "h" or side == "hor": fig.add_hrect(y0 = c0, y1 = c1, fillcolor = Color,
+                                                       layer = "below" , opacity = 0.5, 
+                                                       annotation_text = text,
                                                        annotation_position = text_position
                                                        )
         
-        if side == "v" or side == "ver": fig.add_vrect(y0 = c0, y1 = c1, color = Color, 
-                                                line_dash = "dot", annotation_text = text,
-                                                annotation_position = text_position
-                                                )
+        if side == "v" or side == "ver": fig.add_vrect(x0 = c0, x1 = c1, fillcolor = Color,
+                                                       layer = "below" , opacity = 0.5, 
+                                                       annotation_text = text,
+                                                       annotation_position = text_position
+                                                      )
         
         else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal box or
                         'v' or 'ver' to draw vertical box.
                         """)
+        
+    # def show_plot(self,)
     
     
         
