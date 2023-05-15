@@ -8,6 +8,7 @@ from datetime import datetime
 import re
 from typing import Dict
 
+
 class get_market_data: 
     
     def __init__(self, symbol) -> None:
@@ -37,7 +38,7 @@ class get_market_data:
         return end_date
     
     
-    def dt2ts( self, datetime:dt.datetime ) -> int:
+    def __dt2ts( self, datetime:dt.datetime ) -> int:
         """ converts datetime to timestamp data in int 
 
         Args:
@@ -49,7 +50,7 @@ class get_market_data:
         return dt.datetime.timestamp(datetime).__int__()
     
     
-    def ts2dt(self, ts:int )-> dt.datetime:
+    def __ts2dt(self, ts:int )-> dt.datetime:
         """converts timestamp to datetime format
 
         Args:
@@ -133,7 +134,6 @@ class get_market_data:
 
         # converting format of data columns
         df["timestamp"] = df.timestamp.astype("Int64")
-        df[df.columns.to_list()[1:]] = df[df.columns.to_list()[1:]].astype("Float64") 
         df["datetime"] = pd.to_datetime( df["timestamp"], unit = 's')
         df = df[["timestamp","datetime",'open','close','high','low','volume','turnover']]
         df[ df.columns.to_list()[2:] ] = df[ df.columns.to_list()[2:] ].astype("Float64")
@@ -141,7 +141,7 @@ class get_market_data:
         return df
     
     
-    def group_klines(self, df:pd.DataFrame, *by):
+    def group_klines(self, df:pd.DataFrame, *grp_bys):
         """groups dataframe by ("year", "month", "day") tuple arg if specified.
 
         Args:
@@ -152,7 +152,9 @@ class get_market_data:
             
         example:
             self.group_klines(df , ("year" , "month" , "day")) --> groups df by year, month, day
-        """        
+        """      
+        by = grp_bys[0]
+          
         grps = []
         
         
@@ -166,8 +168,10 @@ class get_market_data:
         return df.groupby(grps)
     
     
-    def df2candlestick(df:pd.DataFrame, x:str = "datetime",open:str = 'open',close:str = 'close',high:str='high',
-                       low:str="low"):
+    
+    
+    def df2candlestick(self , df:pd.DataFrame, X:str = "datetime",OPEN:str = 'open', CLOSE:str = 'close', HIGH:str='high',
+                       LOW:str="low"):
         """converts data frame data to candlestick format. name of needed columns must be specified.
 
         Args:
@@ -177,61 +181,147 @@ class get_market_data:
             close (str, optional): name of close column in df. Defaults to 'close'.
             high (str, optional): // high //. Defaults to 'high'.
             low (str, optional): // low // . Defaults to "low".
+            
 
         Returns:
             _type_: candlestick data
         """        
-        
-        return go.Candlestick(x = df[x],
-                open = df[open],
-                high = df[high],
-                low = df[low],
-                close = df[close])
+
+        return go.Candlestick(x = df[X],
+                open = df[OPEN],
+                high = df[HIGH],
+                low = df[LOW],
+                close = df[CLOSE])
     
     
     
-    def plot_candlestick(self , dataframe:pd.DataFrame, **args):
+    def plot_candlestick_plotly(self , dataframe:pd.DataFrame, plot_by_grp:bool = True , **args):
         """plots data as candlestick format. 
 
         Args:
             dataframe (pd.DataFrame): input dataframe with standard column names
+            
+            **args : 
+                    x,open,high,low,close : same as df2candlestick() name of columns related to these values can be specified
+                    slider:bool use slider in x axis or not
+                    size: size of figure 
+        """        
+        if plot_by_grp:
+            
+            get_grp = []
+            grp_by = []
+            
+            if "year" in args.keys(): # if there is a year arg uses it in group by later
+                if type(args["year"]) == int: 
+                    get_grp.append(args["year"])
+                    grp_by.append("year")
+                else: raise Exception("year arg must be int")
+                
+            if "month" in args.keys(): # same as year
+                if type(args["month"]) == int: 
+                    get_grp.append(args["month"])
+                    grp_by.append("month")
+                else: raise Exception("month arg must be int")
+                
+            
+            if "day" in args.keys():
+                if type(args["day"]) == int: 
+                    get_grp.append(args["day"])
+                    grp_by.append("day")
+                else: raise Exception("day arg must be int")
+                
+                
+            
+            grps = self.group_klines(dataframe , grp_by ) # group data by entered dates
+            
+            if len(get_grp) == 1 : grp = grps.get_group( get_grp[0] ) 
+            else: grp = grps.get_group( tuple(get_grp) ) # get specified grp of data 
+             
+            str_temp = str(grp_by)+" : "+str(get_grp)
+            
+            
+            if "x" in args.keys() and "open" in args.keys() and "close" in args.keys() and "low" in args.keys() and "high" in args.keys():
+                fig = go.Figure(data=[ self.df2candlestick( grp, OPEN = args["open"], CLOSE = args["close"],
+                                                        LOW = args["low"], HIGH = args["high"] ) ])
+            
+            else:
+                fig = go.Figure( data=[self.df2candlestick( grp )] )
+                
+                
+        # plot full data if plot_by_grp is False
+        else: 
+            fig = go.Figure( data=[self.df2candlestick( dataframe )] )
+            str_temp = ""
+        
+        
+        if "slider" in args.keys(): # add slider in x axis or not
+            if type(args["slider"]) == bool:
+                fig.update_layout(xaxis_rangeslider_visible = args["slider"] )
+            else: raise Exception("slider param can be bool")
+        
+        
+        
+        
+        if "size" in args.keys(): # changes fig size
+            if type(args["size"]) == list:
+                fig.update_layout( width = args["size"][0], height = args["size"][1],
+                                   title = self.symbol+'  ' + str_temp,
+                                   yaxis_title = self.symbol
+                                 )
+            else : raise Exception("fig size must be a 2 element list")
+            
+        return fig
+    
+    
+    
+    def draw_box(self, fig:go.Figure, p0:list[float,float], p1:list[float,float], 
+                 fill_color:str = "LightSkyBlue",  ):
+        """draw a rectangle with two point as p0 , p1 on input plotly object. each p0,p1 is a list as [x,y]
+
+        Args:
+            fig (go.Figure): fig object from plotly
+            p0 (list[float,float]): first corner of rectangle x,y
+            p1 (list[float,float]): second corner of rectangle x,y
+            fill_color (str, optional): inner color of rectangle. Defaults to "LightSkyBlue".
         """        
         
-        get_grp = []
-        args = []
-        
-        if "year" in args.keys(): 
-            if type(args["year"]) == int: 
-                get_grp.append(args["year"])
-                args.append("year")
-            else: raise Exception("year arg must be int")
-            
-        if "month" in args.keys():
-            if type(args["month"]) == int: 
-                get_grp.append(args["month"])
-                args.append("month")
-            else: raise Exception("month arg must be int")
-            
-        
-        if "day" in args.keys():
-            if type(args["day"]) == int: 
-                get_grp.append(args["day"])
-                args.append("day")
-            else: raise Exception("day arg must be int")
-            
-        grps = self.group_klines(dataframe , args )
-        grp = grps.get_group( tuple(get_grp) )
-        
-        if "x" in args.keys() and "open" in args.keys() and "close" in args.keys() and "low" in args.keys() and "high" in args.keys():
-            fig = go.Figure(data=[ self.df2candlestick( dataframe,args["open"],args["close"],args["low"],args["high"] ) ])
-            fig.show()
-        
-        else:
-            fig = go.Figure(data=[ self.df2candlestick( dataframe ) ])
-            fig.show()
+        fig.add_shape( type = "rect", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1],
+                      fillcolor = fill_color, layer = "below" , opacity = 0.5
+                     )
         
         
+        
+        
+    def draw_static_line(self, fig:go.Figure, side:str, c:float, 
+                         Color:str = "red", text:str = "", text_position:str = "top right" ):
+        
+        """draw static lines with its value as c and a plotly object.
 
+        Args:
+                fig = plotly figure object
+                side = "h" for horizontal line and 'v' for vertical line.
+                Color : line color
+                text: a text on line
+                text_position : position of text on line
+        """        
+        
+        if side == "h" or side == "hor":  fig.add_hline(y = c, color = Color, line_dash = "dot",
+                                                        annotation_text = text, 
+                                                        annotation_position = text_position
+                                                        )
+        
+        elif side == "v" or side == "ver": fig.add_vline(x = c, color = Color, line_dash = "dot",
+                                                        annotation_text = text, 
+                                                        annotation_position = text_position )
+        
+        else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal line or
+                              'v' or 'ver' to draw vertical line.
+                              """)
+       
+        
+    def 
+            
+            
                
         
         
