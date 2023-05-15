@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 import re
 from typing import Dict
+from typing import List
 
 
 class get_market_data: 
@@ -274,8 +275,34 @@ class get_market_data:
     
     
     
-    def draw_box(self, fig:go.Figure, p0:list[float,float], p1:list[float,float], 
-                 fill_color:str = "LightSkyBlue",  ):
+    
+    def draw_line(self, fig:go.Figure, p0:List[float], p1:List[float], Color:str = "yellow",
+                  width:int = 2, text:str = "", text_position:str = "top right", **kwargs):
+        """draws a line on given plotly figure obj starting with point p0:(x0,y0) to p1: (x1,y1)
+
+        Args:
+            fig (go.Figure): _description_
+            p0 (List[float]): _description_
+            p1 (List[float]): _description_
+            Color (str, optional): _description_. Defaults to "yellow".
+            width (int, optional): _description_. Defaults to 2.
+            text (str, optional): _description_. Defaults to "".
+            text_position (str, optional): _description_. Defaults to "top right".
+        kwargs:
+            line_dash : dash type ('dot' for example)
+        """        
+        line_ = fig.add_shape(type="line", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1], 
+                      line = dict(color = Color, width = width) ,
+                      label = dict(text = text, textposition = text_position) 
+                     )
+        
+        if "line_dash" in kwargs.keys(): line_.update_shapes(line = dict(dash = kwargs["line_dash"]))   
+        
+
+    
+    
+    def draw_box(self, fig:go.Figure, p0:List[float], p1:List[float], 
+                 fill_color:str = "LightSkyBlue"  ):
         """draw a rectangle with two point as p0 , p1 on input plotly object. each p0,p1 is a list as [x,y]
 
         Args:
@@ -319,7 +346,28 @@ class get_market_data:
                               """)
        
         
-    def 
+        
+        
+    def draw_static_box(self, fig:go.Figure, side:str, c0:float,c1:float ,
+                         Color:str = "red", text:str = "", text_position:str = "top right" ):
+        
+        if side == "h" or side == "hor": fig.add_hrect(y0 = c0, y1 = c1, color = Color, 
+                                                       line_dash = "dot", annotation_text = text,
+                                                       annotation_position = text_position
+                                                       )
+        
+        if side == "v" or side == "ver": fig.add_vrect(y0 = c0, y1 = c1, color = Color, 
+                                                line_dash = "dot", annotation_text = text,
+                                                annotation_position = text_position
+                                                )
+        
+        else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal box or
+                        'v' or 'ver' to draw vertical box.
+                        """)
+    
+    
+        
+        
             
             
                
