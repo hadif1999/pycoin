@@ -362,7 +362,8 @@ class get_market_data:
                         'v' or 'ver' to draw vertical box.
                         """)
         
-    # def show_plot(self,)
+    def draw_circle(self, center:List[str,float], R:float, fillcolor:str):
+        
     
     
         
