@@ -246,7 +246,8 @@ class get_market_data:
         
         # add titles and drag modes
         fig.update_layout(title = self.symbol+'  ' + str_temp,
-                          yaxis_title = self.symbol, dragmode = "pan" )
+                          yaxis_title = self.symbol, dragmode = "pan",  
+                          margin=dict(l=15, r=10, t=35, b=12) )
         
         
         if "slider" in args.keys(): # add slider in x axis or not
@@ -259,7 +260,7 @@ class get_market_data:
             if type(args["fig_size"]) == list:
                 fig.update_layout( width = args["fig_size"][0], height = args["fig_size"][1] )
             else : raise Exception(" 'fig_size' must be a 2 element list")
-            
+                        
         return fig
     
     
@@ -362,7 +363,26 @@ class get_market_data:
                         'v' or 'ver' to draw vertical box.
                         """)
         
-    def draw_circle(self, center:List[str,float], R:float, fillcolor:str):
+        
+    def draw_circle(self, fig:go.Figure, center:List, R:float, fillcolor:str = "green", 
+                    y_scale:float = 0.1):
+        
+        """draws a circle at entered center which is a two element list to R radius 
+
+        Args:
+            fig (go.Figure): input figure object
+            center (List): center of circle
+            R (float): radius of circle ( evaluate with test beacuse scales data of y axis)
+            fillcolor (str, optional): inside color of circle. Defaults to "green".
+        """        
+        
+        x_center = dt.datetime.strptime(center[0], '%Y-%m-%d %H:%M:%S')
+        x_0 = x_center - dt.timedelta(minutes = R)
+        x_1 = x_center + dt.timedelta(minutes = R)
+        
+        fig.add_shape(type = "circle", fillcolor = fillcolor, layer = "below", opacity = 0.6,
+                      xref="x", yref="y", x0 = x_0  , y0 = center[1]-(float(R) * y_scale), 
+                      x1= x_1 , y1 = center[1]+ (float(R) * y_scale) )
         
     
     
