@@ -16,20 +16,20 @@ btc_15m_fig.show(config = config_)
 # %% add shapes to plot
 
 # dynamic line
-# market.draw_line(btc_15m_fig,["2022-12-01 00:15:00",14000],["2022-12-25 15:15:00",16000]
-#                  , text_= "test" , text_position= 'top center')
+market.draw_line(btc_15m_fig, p0 = ["2022-12-01 00:15:00",14000], p1 = ["2022-12-25 15:15:00",16000])
 # # rectangle
 # market.draw_box(btc_15m_fig, ["2022-12-10 00:15:00",14000], ["2022-12-15 15:15:00",20000] )
 
 # draw static line
 # market.draw_static_line(btc_15m_fig, 'h', 16000, text = "test t4t4t4txt", text_position='top center')
 
+# draw static box
 # market.draw_static_box(btc_15m_fig, side = 'v',c0 = "2022-12-10 00:15:00",c1 = "2022-12-15 15:15:00",
 #                        text ="test text box")
 
+# draw circle
 # market.draw_circle(btc_15m_fig, ["2022-12-01 00:15:00",17500], 500)
-
-# btc_15m_fig.update_traces(mode="lines+markers+text")
+market.add_text(btc_15m_fig, "test", ["2022-12-25 15:15:00", 16000] , font_size = 15 )
 
 btc_15m_fig.show(config = config_)
 

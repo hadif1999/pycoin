@@ -266,8 +266,8 @@ class get_market_data:
     
     
     
-    def draw_line(self, fig:go.Figure, p0:List[float], p1:List[float], Color:str = "yellow",
-                  width:int = 2, text_:str = "", font_size:int = 14,text_position:str = "top right", **kwargs):
+    def draw_line(self, fig:go.Figure, p0:List[float], p1:List[float], Color:str = "orange",
+                  width_:int = 2, text_:str = "", text_position:str = "top right", **kwargs):
         """draws a line on given plotly figure obj starting with point p0:(x0,y0) to p1: (x1,y1)
 
         Args:
@@ -281,10 +281,8 @@ class get_market_data:
         kwargs:
             line_dash : dash type ('dot' for example)
         """        
-        line_ = dict(color = Color, width = width)
-        label_ = dict(text = text_, textposition = text_position, font = dict(color="black",
-                                                                            family="Courier New, monospace",
-                                                                            size = font_size)) 
+        line_ = dict(color = Color, width = width_)
+        label_ = dict(text = text_, textposition = text_position) 
         
         fig.add_shape(type="line", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1], 
                       line = line_ , label = label_ ) 
@@ -383,6 +381,16 @@ class get_market_data:
         fig.add_shape(type = "circle", fillcolor = fillcolor, layer = "below", opacity = 0.6,
                       xref="x", yref="y", x0 = x_0  , y0 = center[1]-(float(R) * y_scale), 
                       x1= x_1 , y1 = center[1]+ (float(R) * y_scale) )
+        
+        
+    
+    def add_text(self, fig:go.Figure, text:str, p:List, arrow:bool= False , y_shift:int = 15, 
+                 font_size:int = 14, font_color:str = "black", text_angle:int=0 ,  **kwargs ):
+        "adds text to plotly figure object"
+        
+        fig.add_annotation(x=p[0], y=p[1], text = text, showarrow = arrow, yshift = y_shift, 
+                           font= dict( size = font_size, color = font_color), textangle = text_angle)
+        
         
     
     
