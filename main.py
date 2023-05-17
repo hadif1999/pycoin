@@ -1,8 +1,8 @@
 #%% import market get data lib
-from market_data_kline_plots.get_market_data import get_market_data
+from market_data_kline_plots.market_plotter import get_market_plots
 
 #%% load data
-market = get_market_data('BTC-USDT')
+market = get_market_plots('BTC-USDT')
 btc_15min_df = market.load_kline_data('BTC-USDT|15min.csv')
 #%% plot interactive candlestick data
 
@@ -33,4 +33,4 @@ market.add_text(btc_15m_fig, "test", ["2022-12-25 15:15:00", 16000] , font_size 
 
 btc_15m_fig.show(config = config_)
 
-# %%
+# %% 
