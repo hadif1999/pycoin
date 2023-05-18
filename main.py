@@ -33,4 +33,7 @@ process.plot_all_min_max(btc_15m_fig, candle_range = 200 , min_change = 0.003 , 
 btc_15m_fig.show(config = config_)
 
 
+# %% highlight some candles
+process.highlight_candle_range(btc_15m_fig, "2021-12-10 00:15:00","2021-12-17 23:45:00")
+    
 # %%

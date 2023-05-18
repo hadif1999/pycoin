@@ -179,8 +179,8 @@ class get_market_plots:
     
     
     
-    def __df2candlestick(self , df:pd.DataFrame, X:str = "datetime",OPEN:str = 'open', CLOSE:str = 'close', HIGH:str='high',
-                       LOW:str="low"):
+    def df2candlestick(self , df:pd.DataFrame, X:str = "datetime",OPEN:str = 'open', CLOSE:str = 'close', HIGH:str='high',
+                       LOW:str="low", name:str = "candlestick", **kwargs ):
         """converts data frame data to candlestick format. name of needed columns must be specified.
 
         Args:
@@ -190,17 +190,33 @@ class get_market_plots:
             close (str, optional): name of close column in df. Defaults to 'close'.
             high (str, optional): // high //. Defaults to 'high'.
             low (str, optional): // low // . Defaults to "low".
-            
+       
+        **kwargs:
+            increase_color(str): color of increasing candles
+            decrease_color(str): color of decreasing candles
 
         Returns:
             _type_: candlestick data
         """        
-
-        return go.Candlestick(x = df[X],
-                open = df[OPEN],
-                high = df[HIGH],
-                low = df[LOW],
-                close = df[CLOSE])
+        candle_data = go.Candlestick(x = df[X],
+                                     open = df[OPEN],
+                                     high = df[HIGH],
+                                     low = df[LOW],
+                                     close = df[CLOSE],
+                                     name = name
+                                    )
+        
+        if "increase_color" in kwargs.keys() : 
+            candle_data.increasing.fillcolor = kwargs["increase_color"]
+            candle_data.decreasing.line.color = kwargs["increase_color"]
+            
+        if "decrease_color" in kwargs.keys() : 
+            candle_data.decreasing.fillcolor = kwargs["decrease_color"]
+            candle_data.decreasing.line.color = kwargs["decrease_color"]
+            
+        return candle_data
+        
+        
     
     
     
@@ -240,18 +256,22 @@ class get_market_plots:
             # if the name of df columns are not standard they will be specified here
             if "x" in args.keys() and "open" in args.keys() and "close" in args.keys() and "low" in args.keys() and "high" in args.keys():
                 candlestick_data = self.df2candlestick( grp, OPEN = args["open"], CLOSE = args["close"],
-                                                        LOW = args["low"], HIGH = args["high"] ) 
+                                                        LOW = args["low"], HIGH = args["high"],
+                                                        name = self.symbol+" candlestick data"
+                                                        ) 
             
             else:
-                candlestick_data = self.__df2candlestick( grp )
+                candlestick_data = self.df2candlestick( grp, name = self.symbol+" candlestick data" )
                 
         
         else: 
-            candlestick_data = self.__df2candlestick( dataframe ) # plot full data if plot_by_grp is False
+            # plot full data if plot_by_grp is False
+            candlestick_data = self.df2candlestick( dataframe , name = self.symbol+" candlestick data") 
             str_temp = ""
+             
         
         
-        fig = go.Figure( data = [candlestick_data] )
+        fig = go.Figure(  data = [candlestick_data] )
         
         # add titles and drag modes
         fig.update_layout(title = self.symbol+'  ' + str_temp,
@@ -410,6 +430,8 @@ class get_market_plots:
         tick = self.market.get_ticker(symbol = self.symbol )
         tick["datetime"] = dt.datetime.fromtimestamp( tick["time"]*1e-3 )
         return tick
+    
+    
     
     def remove_all_shapes( self, fig:go.Figure ):
         fig.layout.shapes = []

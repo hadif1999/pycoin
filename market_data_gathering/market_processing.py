@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import sys
 sys.setrecursionlimit(10000)
 import numpy as np
-
+import datetime as dt
 
 
 class market_processing(get_market_plots):
@@ -61,7 +61,17 @@ class market_processing(get_market_plots):
    
    
     
-    def highlight_candle_range()
+    def highlight_candle_range(self, fig:go.Figure, from_time:str, to_time:str, 
+                               decrease_color:str = "blue", increase_color:str = "blue" ):
+        df_ = self.df.copy()
+        df_.set_index("datetime", inplace=True, drop = False)
+        df_temp = df_.loc[ from_time : to_time ]
+        
+        highlight_candle = self.df2candlestick(df_temp, name = "highlight", increase_color = increase_color,
+                                                 decrease_color = decrease_color)
+        
+        fig.add_trace(highlight_candle)
+        
 
              
     
