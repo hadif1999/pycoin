@@ -59,5 +59,9 @@ class market_processing(get_market_plots):
         for max in max_pivots:
             super().draw_circle(fig = fig, center = max, R = R , fillcolor = max_color , y_scale = y_scale )
    
+   
+    
+    def highlight_candle_range()
+
              
-        
+    

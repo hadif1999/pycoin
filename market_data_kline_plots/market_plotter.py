@@ -143,9 +143,10 @@ class get_market_plots:
         df = df[["timestamp","datetime",'open','close','high','low','volume','turnover']]
         df[ df.columns.to_list()[2:] ] = df[ df.columns.to_list()[2:] ].astype("Float64")
         
-        if reverse: return df.reindex(index= df.index[::-1])
-
-        else: return df
+        if reverse: df = df.reindex(index= df.index[::-1])
+        df.reset_index(drop = True, inplace = True)
+        
+        return df
     
 
     
@@ -412,6 +413,8 @@ class get_market_plots:
     
     def remove_all_shapes( self, fig:go.Figure ):
         fig.layout.shapes = []
+        
+        
         
     
     
