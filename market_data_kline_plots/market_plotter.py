@@ -39,6 +39,7 @@ class get_market_plots:
         return end_date
     
     
+    
     def __dt2ts( self, datetime:dt.datetime ) -> int:
         """ converts datetime to timestamp data in int 
 
@@ -49,6 +50,7 @@ class get_market_plots:
             int: timestamp
         """        
         return dt.datetime.timestamp(datetime).__int__()
+    
     
     
     def __ts2dt(self, ts:int )-> dt.datetime:
@@ -120,7 +122,9 @@ class get_market_plots:
         return df_temp
     
     
-    def load_kline_data(self , file_name:str) -> pd.DataFrame :
+    
+    
+    def load_kline_data(self , file_name:str, reverse:bool = False) -> pd.DataFrame :
         """reads kline date in .csv or .xlsx format.
 
         Args:
@@ -139,8 +143,11 @@ class get_market_plots:
         df = df[["timestamp","datetime",'open','close','high','low','volume','turnover']]
         df[ df.columns.to_list()[2:] ] = df[ df.columns.to_list()[2:] ].astype("Float64")
         
-        return df
+        if reverse: return df.reindex(index= df.index[::-1])
+
+        else: return df
     
+
     
     def group_klines(self, df:pd.DataFrame, *grp_bys):
         """groups dataframe by ("year", "month", "day") tuple arg if specified.
@@ -171,7 +178,7 @@ class get_market_plots:
     
     
     
-    def df2candlestick(self , df:pd.DataFrame, X:str = "datetime",OPEN:str = 'open', CLOSE:str = 'close', HIGH:str='high',
+    def __df2candlestick(self , df:pd.DataFrame, X:str = "datetime",OPEN:str = 'open', CLOSE:str = 'close', HIGH:str='high',
                        LOW:str="low"):
         """converts data frame data to candlestick format. name of needed columns must be specified.
 
@@ -287,7 +294,7 @@ class get_market_plots:
         label_ = dict(text = text_, textposition = text_position) 
         
         fig.add_shape(type="line", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1], 
-                      line = line_ , label = label_ ) 
+                      line = line_ , label = label_ , editable= True) 
         
         if "line_dash" in kwargs.keys(): 
             line_["dash"] = kwargs["line_dash"]
@@ -308,7 +315,7 @@ class get_market_plots:
         """        
         
         fig.add_shape( type = "rect", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1],
-                      fillcolor = fill_color, layer = "below" , opacity = 0.5
+                      fillcolor = fill_color, layer = "below" , opacity = 0.5, editable = True
                      )
         
         
@@ -332,9 +339,9 @@ class get_market_plots:
                                                                              family="Courier New, monospace",
                                                                              size = font_size))
         
-        if side == "h" or side == "hor":  fig.add_hline( y = c, line = line_ , label = label_ )
+        if side == "h" or side == "hor":  fig.add_hline( y = c, line = line_ , label = label_, editable = True )
         
-        elif side == "v" or side == "ver": fig.add_vline(x = c, line = line_ , label = label_ )
+        elif side == "v" or side == "ver": fig.add_vline(x = c, line = line_ , label = label_, editable = True )
         
         else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal line or
                               'v' or 'ver' to draw vertical line.
@@ -350,13 +357,13 @@ class get_market_plots:
         if side == "h" or side == "hor": fig.add_hrect(y0 = c0, y1 = c1, fillcolor = Color,
                                                        layer = "below" , opacity = 0.5, 
                                                        annotation_text = text,
-                                                       annotation_position = text_position
+                                                       annotation_position = text_position, editable = True
                                                        )
         
         if side == "v" or side == "ver": fig.add_vrect(x0 = c0, x1 = c1, fillcolor = Color,
                                                        layer = "below" , opacity = 0.5, 
                                                        annotation_text = text,
-                                                       annotation_position = text_position
+                                                       annotation_position = text_position, editable= True
                                                       )
         
         else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal box or
@@ -376,7 +383,7 @@ class get_market_plots:
             fillcolor (str, optional): inside color of circle. Defaults to "green".
         """        
         x_c = center[0]
-        if type(x_c == pd._libs.tslibs.timestamps.Timestamp):
+        if type(x_c) == pd._libs.tslibs.timestamps.Timestamp:
             x_c = str(x_c.to_pydatetime())
         
         x_center = dt.datetime.strptime(x_c , '%Y-%m-%d %H:%M:%S')
@@ -385,7 +392,7 @@ class get_market_plots:
         
         fig.add_shape(type = "circle", fillcolor = fillcolor, layer = "below", opacity = 0.6,
                       xref="x", yref="y", x0 = x_0  , y0 = center[1]-(float(R) * y_scale), 
-                      x1= x_1 , y1 = center[1]+ (float(R) * y_scale) )
+                      x1= x_1 , y1 = center[1]+ (float(R) * y_scale), editable = True )
         
         
     
@@ -396,6 +403,12 @@ class get_market_plots:
         fig.add_annotation(x=p[0], y=p[1], text = text, showarrow = arrow, yshift = y_shift, 
                            font= dict( size = font_size, color = font_color), textangle = text_angle)
         
+        
+    
+    def get_tick(self):
+        tick = self.market.get_ticker(symbol = self.symbol )
+        tick["datetime"] = dt.datetime.fromtimestamp( tick["time"]*1e-3 )
+        return tick
         
     
     
