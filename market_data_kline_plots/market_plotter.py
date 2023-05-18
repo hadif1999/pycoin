@@ -225,7 +225,8 @@ class get_market_plots:
             
             if len(get_grp) == 1 : grp = grps.get_group( get_grp[0] ) 
             else: grp = grps.get_group( tuple(get_grp) )      # get specified grp of data 
-             
+            grp = grp.reset_index()
+            
             str_temp = str(grp_by)+" : "+str(get_grp) 
             
             # if the name of df columns are not standard they will be specified here
@@ -261,7 +262,8 @@ class get_market_plots:
                 fig.update_layout( width = args["fig_size"][0], height = args["fig_size"][1] )
             else : raise Exception(" 'fig_size' must be a 2 element list")
                         
-        return fig
+        try: return fig, grp
+        except: return fig
     
     
     
@@ -373,8 +375,11 @@ class get_market_plots:
             R (float): radius of circle ( evaluate with test beacuse scales data of y axis)
             fillcolor (str, optional): inside color of circle. Defaults to "green".
         """        
+        x_c = center[0]
+        if type(x_c == pd._libs.tslibs.timestamps.Timestamp):
+            x_c = str(x_c.to_pydatetime())
         
-        x_center = dt.datetime.strptime(center[0], '%Y-%m-%d %H:%M:%S')
+        x_center = dt.datetime.strptime(x_c , '%Y-%m-%d %H:%M:%S')
         x_0 = x_center - dt.timedelta(minutes = R)
         x_1 = x_center + dt.timedelta(minutes = R)
         

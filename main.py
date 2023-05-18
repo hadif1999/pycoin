@@ -6,7 +6,7 @@ market = get_market_plots('BTC-USDT')
 btc_15min_df = market.load_kline_data('BTC-USDT|15min.csv')
 #%% plot interactive candlestick data
 
-btc_15m_fig = market.plot_candlestick_plotly(btc_15min_df, plot_by_grp = True, year = 2022, 
+btc_15m_fig, btc_grp_df = market.plot_candlestick_plotly(btc_15min_df, plot_by_grp = True, year = 2022, 
                                       month = 12, fig_size = [1100,600], slider = False)
 
 config_ = {'modeBarButtonsToAdd':['drawline','drawcircle','drawrect','eraseshape']}
@@ -16,7 +16,7 @@ btc_15m_fig.show(config = config_)
 # %% add shapes to plot
 
 # dynamic line
-market.draw_line(btc_15m_fig, p0 = ["2022-12-01 00:15:00",14000], p1 = ["2022-12-25 15:15:00",16000])
+# market.draw_line(btc_15m_fig, p0 = ["2022-12-01 00:15:00",14000], p1 = ["2022-12-25 15:15:00",16000])
 # # rectangle
 # market.draw_box(btc_15m_fig, ["2022-12-10 00:15:00",14000], ["2022-12-15 15:15:00",20000] )
 
@@ -29,7 +29,20 @@ market.draw_line(btc_15m_fig, p0 = ["2022-12-01 00:15:00",14000], p1 = ["2022-12
 
 # draw circle
 # market.draw_circle(btc_15m_fig, ["2022-12-01 00:15:00",17500], 500)
-market.add_text(btc_15m_fig, "test", ["2022-12-25 15:15:00", 16000] , font_size = 15 )
+
+# add text
+# market.add_text(btc_15m_fig, "test", ["2022-12-25 15:15:00", 16000] , font_size = 15 )
+
+# btc_15m_fig.show(config = config_)
+
+# %% plot pivots ( min and max in a range of candles)
+
+from market_data_gathering.market_processing import market_processing
+
+process = market_processing(btc_grp_df)
+
+process.plot_all_min_max(btc_15m_fig, candle_range = 200 , min_color = "red",
+                         max_color = "green", R = 350)
 
 btc_15m_fig.show(config = config_)
 
