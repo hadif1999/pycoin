@@ -48,16 +48,16 @@ class market_processing(get_market_plots):
     
     
     def plot_all_min_max(self, fig:go.Figure, candle_range:int = 10, min_color:str = "red", 
-                         max_color:str = "green" , R:int = 500, min_change = 0.001):
+                         max_color:str = "green" , R:int = 500, min_change = 0.001, y_scale:float = 0.1):
         
         
         min_pivots , max_pivots = self.get_market_min_max(candle_range = candle_range, min_change = min_change )
 
         for min in min_pivots:
-            super().draw_circle(fig = fig, center = min, R = R , fillcolor = min_color )
+            super().draw_circle(fig = fig, center = min, R = R , fillcolor = min_color , y_scale = y_scale )
             
         for max in max_pivots:
-            super().draw_circle(fig = fig, center = max, R = R , fillcolor = max_color )
+            super().draw_circle(fig = fig, center = max, R = R , fillcolor = max_color , y_scale = y_scale )
    
              
         

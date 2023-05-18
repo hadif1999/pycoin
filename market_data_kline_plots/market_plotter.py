@@ -242,11 +242,11 @@ class get_market_plots:
                                                         LOW = args["low"], HIGH = args["high"] ) 
             
             else:
-                candlestick_data = self.df2candlestick( grp )
+                candlestick_data = self.__df2candlestick( grp )
                 
         
         else: 
-            candlestick_data = self.df2candlestick( dataframe ) # plot full data if plot_by_grp is False
+            candlestick_data = self.__df2candlestick( dataframe ) # plot full data if plot_by_grp is False
             str_temp = ""
         
         
@@ -409,6 +409,9 @@ class get_market_plots:
         tick = self.market.get_ticker(symbol = self.symbol )
         tick["datetime"] = dt.datetime.fromtimestamp( tick["time"]*1e-3 )
         return tick
+    
+    def remove_all_shapes( self, fig:go.Figure ):
+        fig.layout.shapes = []
         
     
     
