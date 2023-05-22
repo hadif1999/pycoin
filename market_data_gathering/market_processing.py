@@ -86,8 +86,8 @@ class market_processing(get_market_plots):
         up_trends = df_with_MA.query(f"MA{str(windows[0])} > MA{str(windows[1])}").copy()
         down_trends = df_with_MA.query(f"MA{str(windows[0])} < MA{str(windows[1])}").copy()
         
-        up_trends["trend"] = up_trends_as
-        down_trends["trend"] = down_trends_as
+        up_trends["MA_trend"] = up_trends_as
+        down_trends["MA_trend"] = down_trends_as
         
         trends = pd.concat([up_trends, down_trends], axis = 0, ignore_index = False, sort = True)
         labeled_df = pd.merge(self.df, trends, how = "left", sort = True).fillna(side_trends_as)
@@ -99,10 +99,10 @@ class market_processing(get_market_plots):
         return labeled_df
     
     
-    def draw_trend(self, fig:go.Figure, up_trend_color:str = "blue", down_trend_color:str = "red",
-                   side_trend_color:str = "yellow"):
+    def draw_trend(self, fig:go.Figure, column:str = "MA_trend", up_trend_color:str = "blue", 
+                   down_trend_color:str = "red", side_trend_color:str = "yellow"):
         
-        trend_grps = self.df.copy().groupby("trend", sort = True) 
+        trend_grps = self.df.copy().groupby(column, sort = True) 
         
         colors = [down_trend_color , side_trend_color , up_trend_color]
         trend_names = list(trend_grps.groups.keys())
