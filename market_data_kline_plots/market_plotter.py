@@ -208,7 +208,7 @@ class get_market_plots:
         
         if "increase_color" in kwargs.keys() : 
             candle_data.increasing.fillcolor = kwargs["increase_color"]
-            candle_data.decreasing.line.color = kwargs["increase_color"]
+            candle_data.increasing.line.color = kwargs["increase_color"]
             
         if "decrease_color" in kwargs.keys() : 
             candle_data.decreasing.fillcolor = kwargs["decrease_color"]
@@ -249,7 +249,7 @@ class get_market_plots:
             
             if len(get_grp) == 1 : grp = grps.get_group( get_grp[0] ) 
             else: grp = grps.get_group( tuple(get_grp) )      # get specified grp of data 
-            grp = grp.reset_index()
+            grp = grp.reset_index(drop = True)
             
             str_temp = str(grp_by)+" : "+str(get_grp) 
             
@@ -424,17 +424,57 @@ class get_market_plots:
         fig.add_annotation(x=p[0], y=p[1], text = text, showarrow = arrow, yshift = y_shift, 
                            font= dict( size = font_size, color = font_color), textangle = text_angle)
         
-        
-    
-    def get_tick(self):
-        tick = self.market.get_ticker(symbol = self.symbol )
-        tick["datetime"] = dt.datetime.fromtimestamp( tick["time"]*1e-3 )
-        return tick
-    
     
     
     def remove_all_shapes( self, fig:go.Figure ):
         fig.layout.shapes = []
+        
+        
+        
+    def highlight_candle_range(self, fig:go.Figure, from_time:str, to_time:str, 
+                            decrease_color:str = "black", increase_color:str = "black" ):
+        df_ = self.df.copy()
+        df_.set_index("datetime", inplace=True, drop = False)
+        df_temp = df_.loc[ from_time : to_time ]
+        
+        highlight_candle = self.df2candlestick(df_temp, name = "highlight", increase_color = increase_color,
+                                                    decrease_color = decrease_color)
+        
+        fig.add_trace(highlight_candle)
+        
+    
+    
+    
+    def highlight_single_candle(self, fig:go.Figure, time, color:str = "blue"):
+        self.highlight_candle_range(fig, time, time , color , color)  
+        
+        
+    def empty_figure(self, **kwargs):
+        fig = go.Figure()
+        
+        # add titles and drag modes
+        fig.update_layout(
+                          dragmode = "pan",  
+                          margin=dict(l=15, r=10, t=35, b=12)
+                         )
+        
+        
+        if "slider" in kwargs.keys(): # add slider in x axis or not
+            if type(kwargs["slider"]) == bool:
+                fig.update_layout(xaxis_rangeslider_visible = kwargs["slider"] )
+            else: raise Exception("slider param can be bool")
+        
+        
+        if "fig_size" in kwargs.keys(): # changes fig size
+            if type(kwargs["fig_size"]) == list:
+                fig.update_layout( width = kwargs["fig_size"][0], height = kwargs["fig_size"][1] )
+            else : raise Exception(" 'fig_size' must be a 2 element list")
+            
+        return fig
+                   
+        
+        
+    
         
         
         

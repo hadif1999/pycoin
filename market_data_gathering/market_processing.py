@@ -5,6 +5,7 @@ import sys
 sys.setrecursionlimit(10000)
 import numpy as np
 import datetime as dt
+from typing import List
 
 
 class market_processing(get_market_plots):
@@ -59,18 +60,59 @@ class market_processing(get_market_plots):
         for max in max_pivots:
             super().draw_circle(fig = fig, center = max, R = R , fillcolor = max_color , y_scale = y_scale )
    
+        
+    @property
+    def tick(self):
+        tick = self.market.get_ticker(symbol = self.symbol )
+        tick["datetime"] = dt.datetime.fromtimestamp( tick["time"]*1e-3 )
+        return tick
    
+   
+    def calc_MAs(self, column:str = "close", windows:List = [50,200] ):
+        
+        df_temp = self.df.copy()
+        
+        for window in windows:
+            df_temp[f"MA{str(window)}"] =  df_temp[column].rolling(window).mean()
+        return df_temp
     
-    def highlight_candle_range(self, fig:go.Figure, from_time:str, to_time:str, 
-                               decrease_color:str = "blue", increase_color:str = "blue" ):
-        df_ = self.df.copy()
-        df_.set_index("datetime", inplace=True, drop = False)
-        df_temp = df_.loc[ from_time : to_time ]
+    
+    def eval_trend_with_MAs(self,column:str = "close" ,windows:List = [50,200], drop_MAs:bool = False,
+                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
         
-        highlight_candle = self.df2candlestick(df_temp, name = "highlight", increase_color = increase_color,
-                                                 decrease_color = decrease_color)
+        if len(windows) > 2 : raise Exception("len of windows must be 2")
+        df_with_MA = self.calc_MAs(column = column, windows = windows)
         
-        fig.add_trace(highlight_candle)
+        up_trends = df_with_MA.query(f"MA{str(windows[0])} > MA{str(windows[1])}").copy()
+        down_trends = df_with_MA.query(f"MA{str(windows[0])} < MA{str(windows[1])}").copy()
+        
+        up_trends["trend"] = up_trends_as
+        down_trends["trend"] = down_trends_as
+        
+        trends = pd.concat([up_trends, down_trends], axis = 0, ignore_index = False, sort = True)
+        labeled_df = pd.merge(self.df, trends, how = "left", sort = True).fillna(side_trends_as)
+        
+        if drop_MAs: labeled_df.drop([f"MA{str(windows[0])}", f"MA{str(windows[1])}"], axis = 1, 
+                                     inplace= True)
+        
+        self.df = labeled_df
+        return labeled_df
+    
+    
+    def draw_trend(self, fig:go.Figure, up_trend_color:str = "blue", down_trend_color:str = "red",
+                   side_trend_color:str = "yellow"):
+        
+        trend_grps = self.df.copy().groupby("trend", sort = True) 
+        
+        colors = [down_trend_color , side_trend_color , up_trend_color]
+        trend_names = list(trend_grps.groups.keys())
+        colors_dict = {key:color for key,color in zip(trend_names,colors)}
+          
+        for name,grp in trend_grps :
+            for i,row in grp.iterrows():
+                super().highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
+        
+    
         
 
              
