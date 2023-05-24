@@ -6,6 +6,7 @@ sys.setrecursionlimit(10000)
 import numpy as np
 import datetime as dt
 from typing import List
+from ta.trend import MACD
 
 
 class market_processing(get_market_plots):
@@ -99,10 +100,35 @@ class market_processing(get_market_plots):
         return labeled_df
     
     
-    def draw_trend(self, fig:go.Figure, column:str = "MA_trend", up_trend_color:str = "blue", 
-                   down_trend_color:str = "red", side_trend_color:str = "yellow"):
+    
+    
+    def eval_trend_with_MACD(self, column:str = "close", window_slow:int = 26 , window_fast:int = 12, 
+                             window_sign:int = 9 , fill_na:bool = True, drop_MACD:bool = False):
         
-        trend_grps = self.df.copy().groupby(column, sort = True) 
+        df_ = self.df.copy()
+        macd = MACD(close = df_[column], window_slow = window_slow , window_fast = window_fast,
+                    window_sign = window_sign, fillna = fill_na,)
+        
+        df_['MACD'] = macd.macd()
+        df_['signal_line'] = macd.macd_signal()
+        df_['MACD_diff'] = df_['MACD'] - df_['signal_line']
+        df_['MACD_trend'] = np.where(df_['MACD_diff'] > 0, 1, np.where(df_['MACD_diff'] < 0, -1, 0))
+        
+        if drop_MACD : df_.drop(['signal_line','MACD','MACD_diff'], axis = 1, inplace = True)
+        self.df = df_
+        return df_
+        
+           
+           
+    
+    def draw_trend(self, fig:go.Figure, column:str = "MA_trend", dataframe:pd.DataFrame = None
+                   , up_trend_color:str = "blue", down_trend_color:str = "red"
+                   , side_trend_color:str = "yellow"):
+        
+        try: df_ = dataframe.copy()
+        except: df_ = self.df.copy()
+            
+        trend_grps = df_.copy().groupby(column, sort = True)
         
         colors = [down_trend_color , side_trend_color , up_trend_color]
         trend_names = list(trend_grps.groups.keys())

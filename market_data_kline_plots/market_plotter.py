@@ -458,7 +458,6 @@ class get_market_plots:
                           margin=dict(l=15, r=10, t=35, b=12)
                          )
         
-        
         if "slider" in kwargs.keys(): # add slider in x axis or not
             if type(kwargs["slider"]) == bool:
                 fig.update_layout(xaxis_rangeslider_visible = kwargs["slider"] )

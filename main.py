@@ -15,7 +15,7 @@ btc_15min_df = market_plot.load_kline_data('BTC-USDT|15min.csv', reverse = True)
 
 btc_15m_grp_fig, btc_grp_df = market_plot.plot_candlestick_plotly(btc_15min_df, 
                                                                   plot_by_grp = True, year = 2022, 
-                                                                  month = 8 , fig_size = [1100,600],
+                                                                  month = 8  , fig_size = [1100,600],
                                                                   slider = False)
 
 # define interactive options to use 
@@ -32,7 +32,7 @@ analysis = market_processing(btc_grp_df)
 
 analysis.plot_all_min_max(btc_15m_grp_fig, candle_range = 200 , min_change = 0.002
                          , min_color = "red", max_color = "green", 
-                         R = 350, y_scale = 0.1 )
+                         R = 350, y_scale = 0.2 )
 
 # show added min and max pivots
 btc_15m_grp_fig.show(config = config_)
@@ -40,18 +40,24 @@ btc_15m_grp_fig.show(config = config_)
 market_plot.remove_all_shapes(btc_15m_grp_fig)
 
 
-# %% evaluating market trend
+# %% evaluating market trend with MA
 
 df_trend = analysis.eval_trend_with_MAs(drop_MAs = False)
 
-# %% plot trend
+# %% plot trend with MAs
 
-
-analysis.draw_trend(btc_15m_grp_fig)
-
-# btc_15m_grp_fig.add_trace(go.Line(btc_15min_df))
+analysis.draw_trend(btc_15m_grp_fig, column = "MA_trend")
 
 btc_15m_grp_fig.show(config = config_)
 
-# %%
+# %% using MACD to find trend of market
+MACD_trend = analysis.eval_trend_with_MACD()
+MACD_trend_fig = market_plot.empty_figure(fig_size = [1100,600], slider = False)
 
+analysis.draw_trend(MACD_trend_fig , column = "MACD_trend")
+
+MACD_trend_fig.show(config = config_)
+
+# plot the trend with macd
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
