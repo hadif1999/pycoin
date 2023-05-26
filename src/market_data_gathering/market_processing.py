@@ -1,5 +1,5 @@
 import pandas as pd
-from market_data_kline_plots.market_plotter import get_market_plots
+from ..market_data_kline_plots.market_plotter import get_market_plots
 import plotly.graph_objects as go
 import sys
 sys.setrecursionlimit(10000)
@@ -78,7 +78,7 @@ class market_processing(get_market_plots):
         return df_temp
     
     
-    def eval_trend_with_MAs(self,column:str = "close" ,windows:List = [50,200], drop_MAs:bool = False,
+    def eval_trend_with_MAs(self,column:str = "close" ,windows:List = [50,200], drop_MA_cols:bool = False,
                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
         
         if len(windows) > 2 : raise Exception("len of windows must be 2")
@@ -93,17 +93,20 @@ class market_processing(get_market_plots):
         trends = pd.concat([up_trends, down_trends], axis = 0, ignore_index = False, sort = True)
         labeled_df = pd.merge(self.df, trends, how = "left", sort = True).fillna(side_trends_as)
         
-        if drop_MAs: labeled_df.drop([f"MA{str(windows[0])}", f"MA{str(windows[1])}"], axis = 1, 
+        if drop_MA_cols: labeled_df.drop([f"MA{str(windows[0])}", f"MA{str(windows[1])}"], axis = 1, 
                                      inplace= True)
         
+        overall_trend = labeled_df["MA_trend"].iloc[-1]
+        
         self.df = labeled_df
-        return labeled_df
+        return labeled_df, overall_trend
     
     
     
     
     def eval_trend_with_MACD(self, column:str = "close", window_slow:int = 26 , window_fast:int = 12, 
-                             window_sign:int = 9 , fill_na:bool = True, drop_MACD:bool = False):
+                             window_sign:int = 9 , fill_na:bool = True, drop_MACD_col:bool = False,
+                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
         
         df_ = self.df.copy()
         macd = MACD(close = df_[column], window_slow = window_slow , window_fast = window_fast,
@@ -112,12 +115,56 @@ class market_processing(get_market_plots):
         df_['MACD'] = macd.macd()
         df_['signal_line'] = macd.macd_signal()
         df_['MACD_diff'] = df_['MACD'] - df_['signal_line']
-        df_['MACD_trend'] = np.where(df_['MACD_diff'] > 0, 1, np.where(df_['MACD_diff'] < 0, -1, 0))
+        df_['MACD_trend'] = np.where(df_['MACD_diff'] > 0, up_trends_as, 
+                                     np.where(df_['MACD_diff'] < 0, down_trends_as, side_trends_as))
         
-        if drop_MACD : df_.drop(['signal_line','MACD','MACD_diff'], axis = 1, inplace = True)
+        if drop_MACD_col : df_.drop(['signal_line','MACD','MACD_diff'], axis = 1, inplace = True)
+        
+        overall_trend = df_["MACD_trend"].iloc[-1]
+        
         self.df = df_
-        return df_
+        return df_, overall_trend
+    
+    
+    def eval_trend_with_price_change(self, column:str = "close", drop_price_ch:bool = True,
+                                     up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
+        df_ = self.df.copy()
+        df_['Price Change'] = df_[column].diff()
+
+# Replace remaining missing values with 0
+        df_['Price Change'].fillna(0, inplace=True)
+
+# Determine the trend based on the price change
+        df_['price_ch_trend'] = np.sign(df_['Price Change']).astype(int)
+
+# Get the overall trend based on the last row
+        overall_trend = df_['price_ch_trend'].iloc[-1]
         
+        if drop_price_ch : df_.drop("price_ch_trend", axis= 1, inplace= True)
+        self.df = df_
+        return df_ , overall_trend
+    
+    
+    def eval_trend_with_ROC(self, column:str = "close" ,nperiods:int = 14, drop_ROC:bool = False, 
+                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
+        
+        df_ = self.df.copy()
+        df_['ROC'] = ((df_[column] - df_[column].shift(nperiods)) / df_[column].shift(nperiods)) * 100
+
+        # Fill missing values with 0
+        df_['ROC'].fillna(0, inplace=True)
+
+        # Determine the trend based on the ROC
+        threshold = 0  # Threshold for trend determination
+        df_['ROC_trend'] = np.where(df_['ROC'] > threshold, up_trends_as, 
+                                    np.where(df_['ROC'] < -threshold, down_trends_as, side_trends_as))
+
+        # Get the overall trend based on the last row
+        overall_trend = df_['ROC_trend'].iloc[-1]
+        
+        if drop_ROC : df_.drop("ROC", axis = 1 , inplace = True)
+        self.df = df_
+        return df_ , overall_trend
            
            
     
