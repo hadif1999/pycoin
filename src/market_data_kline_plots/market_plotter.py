@@ -374,7 +374,17 @@ class get_market_plots:
         
     def draw_static_box(self, fig:go.Figure, side:str, c0:str,c1:str ,
                          Color:str = "green", text:str = "", text_position:str = "top right" ):
-        
+        """draw a static box in a range of x or y coordinates
+
+        Args:
+            fig (go.Figure): plotly figure obj
+            side (str): make box in x or y coord ('h' or 'hor' for horizontal box, 'v' or 'ver' for vertical box)
+            c0 (str): starting coord of box
+            c1 (str): final coord of box
+            Color (str, optional): color of box. Defaults to "green".
+            text (str, optional): add a text to box . Defaults to "".
+            text_position (str, optional): position of text for box. Defaults to "top right".
+        """        
         if side == "h" or side == "hor": fig.add_hrect(y0 = c0, y1 = c1, fillcolor = Color,
                                                        layer = "below" , opacity = 0.5, 
                                                        annotation_text = text,
@@ -419,7 +429,18 @@ class get_market_plots:
     
     def add_text(self, fig:go.Figure, text:str, p:List, arrow:bool= False , y_shift:int = 15, 
                  font_size:int = 14, font_color:str = "black", text_angle:int=0 ,  **kwargs ):
-        "adds text to plotly figure object"
+        """add a text annotation at given coordinates
+
+        Args:
+            fig (go.Figure): plotly figure object
+            text (str): the text to insert
+            p (List): coordinates of text
+            arrow (bool, optional): put a arrow pointing at coordinates or not. Defaults to False.
+            y_shift (int, optional): how much shift the text place from it's y coord. Defaults to 15.
+            font_size (int, optional): text font size. Defaults to 14.
+            font_color (str, optional): color of text. Defaults to "black".
+            text_angle (int, optional): angle of text. Defaults to 0.
+        """        
         
         fig.add_annotation(x=p[0], y=p[1], text = text, showarrow = arrow, yshift = y_shift, 
                            font= dict( size = font_size, color = font_color), textangle = text_angle)
@@ -427,12 +448,26 @@ class get_market_plots:
     
     
     def remove_all_shapes( self, fig:go.Figure ):
+        """remove all shapes from figure object
+
+        Args:
+            fig (go.Figure): _description_
+        """        
         fig.layout.shapes = []
         
         
         
     def highlight_candle_range(self, fig:go.Figure, from_time:str, to_time:str, 
-                            decrease_color:str = "black", increase_color:str = "black" ):
+                            decrease_color:str = "lightred", increase_color:str = "lightblue" ):
+        """highlight a range of candles from given time to final time
+
+        Args:
+            fig (go.Figure): plotly figure object
+            from_time (str): start time
+            to_time (str): end time 
+            decrease_color (str, optional): color of decreasing candles. Defaults to "lightred".
+            increase_color (str, optional): color of increasing candles. Defaults to "lightblue".
+        """        
         df_ = self.df.copy()
         df_.set_index("datetime", inplace=True, drop = False)
         df_temp = df_.loc[ from_time : to_time ]
@@ -445,11 +480,23 @@ class get_market_plots:
     
     
     
-    def highlight_single_candle(self, fig:go.Figure, time, color:str = "blue"):
+    def highlight_single_candle(self, fig:go.Figure, time:str, color:str = "blue"):
+        """highlight a single candle at given time
+
+        Args:
+            fig (go.Figure): plotly figure object
+            time (str): given time
+            color (str, optional): desired color of candle. Defaults to "blue".
+        """        
         self.highlight_candle_range(fig, time, time , color , color)  
         
         
     def empty_figure(self, **kwargs):
+        """make a empty figure
+
+        Returns:
+            go.Figure: plotly figure object
+        """        
         fig = go.Figure()
         
         # add titles and drag modes

@@ -7,6 +7,7 @@ import numpy as np
 import datetime as dt
 from typing import List
 from ta.trend import MACD
+from scipy.signal import argrelextrema
 
 
 class market_processing(get_market_plots):
@@ -15,7 +16,7 @@ class market_processing(get_market_plots):
         self.df = dataframe
         
         
-    def get_market_min_max(self, candle_range:int = 10, min_change:float = 0.001):
+    def get_market_high_lows(self, candle_range:int = 10, min_change:float = 0.001):
         
         dataframe = self.df.copy()
         
@@ -53,7 +54,7 @@ class market_processing(get_market_plots):
                          max_color:str = "green" , R:int = 500, min_change = 0.001, y_scale:float = 0.1):
         
         
-        min_pivots , max_pivots = self.get_market_min_max(candle_range = candle_range, min_change = min_change )
+        min_pivots , max_pivots = self.get_market_high_lows(candle_range = candle_range, min_change = min_change )
 
         for min in min_pivots:
             super().draw_circle(fig = fig, center = min, R = R , fillcolor = min_color , y_scale = y_scale )
@@ -64,12 +65,26 @@ class market_processing(get_market_plots):
         
     @property
     def tick(self):
+        """get market current value
+
+        Returns:
+            Dict: dictionary of values
+        """        
         tick = self.market.get_ticker(symbol = self.symbol )
         tick["datetime"] = dt.datetime.fromtimestamp( tick["time"]*1e-3 )
         return tick
    
    
     def calc_MAs(self, column:str = "close", windows:List = [50,200] ):
+        """calculate moving average with list of desired windows
+
+        Args:
+            column (str, optional): calculate on which column. Defaults to "close".
+            windows (List, optional): list of windows. Defaults to [50,200].
+
+        Returns:
+            _type_: _description_
+        """        
         
         df_temp = self.df.copy()
         
@@ -79,7 +94,22 @@ class market_processing(get_market_plots):
     
     
     def eval_trend_with_MAs(self,column:str = "close" ,windows:List = [50,200], drop_MA_cols:bool = False,
-                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
+                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, inplace:bool = True):
+        """eval trend with moving averages (list of 2 window values (first lower second higher)must be inserted)
+        
+
+        Args:
+            column (str, optional): _description_. Defaults to "close".
+            windows (List, optional): _description_. Defaults to [50,200].
+            drop_MA_cols (bool, optional): drop calculated MA cols after calculation or not. Defaults to False.
+            up_trends_as (int, optional): label of uptrend values. Defaults to 1.
+            down_trends_as (int, optional): label of down trend values. Defaults to -1.
+            side_trends_as (int, optional): label of side trend values. Defaults to 0.
+            inplace(bool): change the dataframe entered at constructor or not. Defaults to True.
+
+        Returns:
+            dataframe with a "MA_trend" column : _description_
+        """        
         
         if len(windows) > 2 : raise Exception("len of windows must be 2")
         df_with_MA = self.calc_MAs(column = column, windows = windows)
@@ -98,7 +128,7 @@ class market_processing(get_market_plots):
         
         overall_trend = labeled_df["MA_trend"].iloc[-1]
         
-        self.df = labeled_df
+        if inplace: self.df = labeled_df
         return labeled_df, overall_trend
     
     
@@ -106,7 +136,7 @@ class market_processing(get_market_plots):
     
     def eval_trend_with_MACD(self, column:str = "close", window_slow:int = 26 , window_fast:int = 12, 
                              window_sign:int = 9 , fill_na:bool = True, drop_MACD_col:bool = False,
-                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
+                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, inplace:bool = True):
         
         df_ = self.df.copy()
         macd = MACD(close = df_[column], window_slow = window_slow , window_fast = window_fast,
@@ -122,27 +152,9 @@ class market_processing(get_market_plots):
         
         overall_trend = df_["MACD_trend"].iloc[-1]
         
-        self.df = df_
+        if inplace: self.df = df_
         return df_, overall_trend
     
-    
-    def eval_trend_with_price_change(self, column:str = "close", drop_price_ch:bool = True,
-                                     up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
-        df_ = self.df.copy()
-        df_['Price Change'] = df_[column].diff()
-
-# Replace remaining missing values with 0
-        df_['Price Change'].fillna(0, inplace=True)
-
-# Determine the trend based on the price change
-        df_['price_ch_trend'] = np.sign(df_['Price Change']).astype(int)
-
-# Get the overall trend based on the last row
-        overall_trend = df_['price_ch_trend'].iloc[-1]
-        
-        if drop_price_ch : df_.drop("price_ch_trend", axis= 1, inplace= True)
-        self.df = df_
-        return df_ , overall_trend
     
     
     def eval_trend_with_ROC(self, column:str = "close" ,nperiods:int = 14, drop_ROC:bool = False, 

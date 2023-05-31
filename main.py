@@ -1,8 +1,5 @@
 #%% import market get data lib
 from src.market_data_kline_plots.market_plotter import get_market_plots
-import pandas as pd
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 
 #%% load data
 market_plot = get_market_plots('BTC-USDT')
