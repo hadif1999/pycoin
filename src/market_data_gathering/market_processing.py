@@ -14,53 +14,69 @@ class market_processing(get_market_plots):
     
     def __init__(self, dataframe:pd.DataFrame) -> None:
         self.df = dataframe
+        self.maxs_series = None
+        self.mins_series = None
         
         
-    def get_market_high_lows(self, candle_range:int = 10, min_change:float = 0.001):
+    def get_market_high_lows(self, candle_range:int = 100, mode:str = "clip", 
+                             high_col:str = "high", low_col:str = "low" ):
         
-        dataframe = self.df.copy()
+        # evaluating min and max from argrelextrema function which finds high and lows
+        max_idx = argrelextrema(data = np.array(self.df[high_col].values.tolist()), 
+                                comparator= np.greater, order = candle_range, mode = mode )[0]
+        min_idx = argrelextrema(data = np.array(self.df[low_col].values.tolist()), 
+                                comparator= np.less, order = candle_range , mode = mode )[0]
         
-        index = 0
-        min_pivots = []
-        max_pivots = []
-        
-        while index < len(dataframe)-1:
-            
-            df_temp = dataframe.iloc[ index : index+candle_range ]
+        df_ = self.df.copy()
 
-            min_temp = df_temp[ df_temp["low"] == df_temp["low"].min() ][["datetime","low"]].values.tolist()[0]
-            max_temp = df_temp[ df_temp["high"] == df_temp["high"].max() ][["datetime","high"]].values.tolist()[0]
+        # adding max between two immediate lows
+        for max in max_idx: 
+            ind_max = np.where( max == max_idx )[0][0]
+            if ind_max > len(min_idx)-1: break
+            if min_idx[ind_max] == min_idx[-1]: break
+            if max == max_idx[-1]: break
             
-            
-            if index > 0 :
-                if np.abs((max_temp[1]-max_pivots[-1][1]))/max(max_pivots[-1][1], max_temp[-1]) > min_change :
-                    max_pivots.append ( max_temp )
-                
-                if  np.abs((min_temp[1]-min_pivots[-1][1]))/max(min_pivots[-1][1], min_temp[-1]) > min_change:
-                    min_pivots.append( min_temp )
-            
-            else:
-                max_pivots.append ( max_temp )
-                min_pivots.append( min_temp )
-                
-                
-            index = df_temp.index[-1]
+            if not max in np.arange( min_idx[ind_max] , min_idx[ind_max+1] ):
+                new_max = df_[df_.iloc[ min_idx[ind_max]:min_idx[ind_max + 1] ][high_col].max() == df_[high_col]].index[0]
+                if new_max == max_idx[-1]: break
+                if new_max == max or new_max == max_idx[ind_max+1] or new_max == max_idx[ind_max-1] : continue
+                max_idx = np.append( max_idx , new_max )
+                max_idx.sort()
         
-        return min_pivots, max_pivots
+        # adding min between two immediate highs
+        for min in min_idx:
+            ind_min = np.where( min == min_idx )[0][0]
+            
+            if ind_min > len(max_idx)-1: break
+            elif min == min_idx[-1] : break
+            elif max_idx[ind_min] == max_idx[-1]: break
+            
+            if not min in np.arange( max_idx[ind_min] , max_idx[ind_min+1] ):
+                new_min = df_[df_.iloc[ max_idx[ind_min]:max_idx[ind_min + 1] ][low_col].min() == df_[low_col]].index[0]
+                if new_min == min_idx[-1]: break
+                if new_min == min or new_min == min_idx[ind_min+1] or new_min == min_idx[ind_min-1] : continue
+                min_idx = np.append( min_idx , new_min )
+                min_idx.sort()
+        
+        self.highs_df = self.df.iloc[max_idx][["datetime",high_col]].values.tolist()
+        self.lows_df = self.df.iloc[min_idx][["datetime",low_col]].values.tolist()
+        return max_idx, min_idx
     
     
     
-    def plot_all_min_max(self, fig:go.Figure, candle_range:int = 10, min_color:str = "red", 
-                         max_color:str = "green" , R:int = 500, min_change = 0.001, y_scale:float = 0.1):
+    
+    def plot_high_lows(self, fig:go.Figure, min_color:str = "red", max_color:str = "green" ,
+                                R:int = 400, y_scale:float = 0.1):
         
+        if self.highs_df == None or self.lows_df == None : 
+            raise ValueError("""you didn't calculate highs and lows yet!
+                                do this by running obj.get_market_high_lows method.""")
         
-        min_pivots , max_pivots = self.get_market_high_lows(candle_range = candle_range, min_change = min_change )
-
-        for min in min_pivots:
-            super().draw_circle(fig = fig, center = min, R = R , fillcolor = min_color , y_scale = y_scale )
+        for low_coord in self.lows_df:
+            super().draw_circle(fig = fig, center = low_coord, R = R , fillcolor = min_color , y_scale = y_scale )
             
-        for max in max_pivots:
-            super().draw_circle(fig = fig, center = max, R = R , fillcolor = max_color , y_scale = y_scale )
+        for high_coord in self.highs_df:
+            super().draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
    
         
     @property
@@ -139,6 +155,7 @@ class market_processing(get_market_plots):
                              up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, inplace:bool = True):
         
         df_ = self.df.copy()
+        # calculating MACD
         macd = MACD(close = df_[column], window_slow = window_slow , window_fast = window_fast,
                     window_sign = window_sign, fillna = fill_na,)
         
@@ -180,7 +197,7 @@ class market_processing(get_market_plots):
            
            
     
-    def draw_trend(self, fig:go.Figure, column:str = "MA_trend", dataframe:pd.DataFrame = None
+    def draw_trend_highlight(self, fig:go.Figure, column:str = "MA_trend", dataframe:pd.DataFrame = None
                    , up_trend_color:str = "blue", down_trend_color:str = "red"
                    , side_trend_color:str = "yellow"):
         

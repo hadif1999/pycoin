@@ -11,8 +11,8 @@ btc_15min_df = market_plot.load_kline_data('BTC-USDT|15min.csv', reverse = True)
 #%% plot interactive candlestick data and pivots
 
 btc_15m_grp_fig, btc_grp_df = market_plot.plot_candlestick_plotly(btc_15min_df, 
-                                                                  plot_by_grp = True, year = 2021, 
-                                                                  month = 2  , fig_size = [1100,600],
+                                                                  plot_by_grp = True, year = 2020, 
+                                                                  month = 8  , fig_size = [1100,600],
                                                                   slider = False)
 
 # define interactive options to use 
@@ -26,10 +26,10 @@ from src.market_data_gathering.market_processing import market_processing
 analysis = market_processing(btc_grp_df)
 
 #%% plot pivots min and max
+import numpy as np
+maxs, mins = analysis.get_market_high_lows(100) 
 
-analysis.plot_all_min_max(btc_15m_grp_fig, candle_range = 200 , min_change = 0.002
-                         , min_color = "red", max_color = "green", 
-                         R = 350, y_scale = 0.2 )
+analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.1)
 
 # show added min and max pivots
 btc_15m_grp_fig.show(config = config_)
@@ -57,5 +57,3 @@ analysis.draw_trend(MACD_trend_fig , column = "MACD_trend")
 MACD_trend_fig.show(config = config_)
 
 #%% plot the trend using price itself
-
-# %%
