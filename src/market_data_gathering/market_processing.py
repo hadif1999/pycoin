@@ -105,7 +105,7 @@ class market_processing(get_market_plots):
             up_trends_as (int, optional): label of uptrend values. Defaults to 1.
             down_trends_as (int, optional): label of down trend values. Defaults to -1.
             side_trends_as (int, optional): label of side trend values. Defaults to 0.
-            inplace(bool): change the dataframe entered at constructor or not. Defaults to True.
+            inplace(bool): add column to dataframe entered at constructor or not. Defaults to True.
 
         Returns:
             dataframe with a "MA_trend" column : _description_
