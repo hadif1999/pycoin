@@ -14,6 +14,9 @@ btc_15m_grp_fig, btc_grp_df = market_plot.plot_candlestick_plotly(btc_15min_df,
                                                                   plot_by_grp = True, year = 2020, 
                                                                   month = 8  , fig_size = [1100,600],
                                                                   slider = False)
+import datetime as dt
+dt.timedelta(minutes=14)
+diff1 = btc_grp_df.diff()
 
 # define interactive options to use 
 config_ = {'modeBarButtonsToAdd':['drawline','drawcircle','drawrect','eraseshape']}
@@ -27,7 +30,7 @@ analysis = market_processing(btc_grp_df)
 
 #%% plot pivots min and max
 import numpy as np
-maxs, mins = analysis.get_market_high_lows(100) 
+maxs, mins = analysis.get_market_high_lows(100, min_dist = [dt.timedelta(seconds = 2400),10]) 
 
 analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.1)
 

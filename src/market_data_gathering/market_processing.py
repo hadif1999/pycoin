@@ -19,7 +19,8 @@ class market_processing(get_market_plots):
         
         
     def get_market_high_lows(self, candle_range:int = 100, mode:str = "clip", 
-                             high_col:str = "high", low_col:str = "low" ):
+                             high_col:str = "high", low_col:str = "low", 
+                             min_dist:list = [dt.timedelta(seconds = 24000), 0.3]  ):
         
         # evaluating min and max from argrelextrema function which finds high and lows
         max_idx = argrelextrema(data = np.array(self.df[high_col].values.tolist()), 
@@ -27,40 +28,115 @@ class market_processing(get_market_plots):
         min_idx = argrelextrema(data = np.array(self.df[low_col].values.tolist()), 
                                 comparator= np.less, order = candle_range , mode = mode )[0]
         
+        
         df_ = self.df.copy()
+        print(min_dist)
 
-        # adding max between two immediate lows
-        for max in max_idx: 
-            ind_max = np.where( max == max_idx )[0][0]
-            if ind_max > len(min_idx)-1: break
-            if min_idx[ind_max] == min_idx[-1]: break
-            if max == max_idx[-1]: break
+                
+        def fill_between_pivots( max_idx:np.ndarray, min_idx:np.ndarray , df_:pd.DataFrame ):
+            # adding max between two immediate lows
+            for max in max_idx: 
+                ind_max = np.where( max == max_idx )[0][0]
+                if ind_max > len(min_idx)-1: break
+                if min_idx[ind_max] == min_idx[-1]: break
+                if max == max_idx[-1]: break
+                
+                if not max in np.arange( min_idx[ind_max] , min_idx[ind_max+1] ):
+                    new_max = df_[df_.iloc[ min_idx[ind_max]:min_idx[ind_max + 1] ][high_col].max() == df_[high_col]].index[0]
+                    if new_max == max_idx[-1]: break
+                    if new_max == max or new_max == max_idx[ind_max+1] or new_max == max_idx[ind_max-1] : continue
+                    max_idx = np.append( max_idx , new_max )
+                    max_idx.sort()
             
-            if not max in np.arange( min_idx[ind_max] , min_idx[ind_max+1] ):
-                new_max = df_[df_.iloc[ min_idx[ind_max]:min_idx[ind_max + 1] ][high_col].max() == df_[high_col]].index[0]
-                if new_max == max_idx[-1]: break
-                if new_max == max or new_max == max_idx[ind_max+1] or new_max == max_idx[ind_max-1] : continue
-                max_idx = np.append( max_idx , new_max )
-                max_idx.sort()
+            # adding min between two immediate highs
+            for min in min_idx:
+                ind_min = np.where( min == min_idx )[0][0]
+                
+                if ind_min > len(max_idx)-1: break
+                elif min == min_idx[-1] : break
+                elif max_idx[ind_min] == max_idx[-1]: break
+                
+                if not min in np.arange( max_idx[ind_min] , max_idx[ind_min+1] ):
+                    new_min = df_[df_.iloc[ max_idx[ind_min]:max_idx[ind_min + 1] ][low_col].min() == df_[low_col]].index[0]
+                    if new_min == min_idx[-1]: break
+                    if new_min == min or new_min == min_idx[ind_min+1] or new_min == min_idx[ind_min-1] : continue
+                    min_idx = np.append( min_idx , new_min )
+                    min_idx.sort()
+                    
+            return max_idx, min_idx
+                
+        def remove_less_than_min_y(max_idx:np.ndarray|list, min_idx: np.ndarray|list, df_:pd.DataFrame, 
+                                   min_y:float = min_dist[1], high_col:str = high_col, low_col:str = low_col):
+            
+            highs_df = df_.iloc[max_idx][["datetime", high_col]]
+            lows_df = df_.iloc[min_idx][["datetime", low_col]]
+            
+            # finding rows below min change
+            less_than_min_y_max = highs_df[ ( highs_df[high_col].diff(1).abs()/ pd.concat([ highs_df[high_col], 
+                                      highs_df[high_col].shift(1) ], axis = 1 ).max(axis = 1) ) < min_y ]
+            
+            # finding the maxs below min y change
+            ind_remove_maxs = pd.concat( [df_.iloc[less_than_min_y_max.index][high_col].reset_index(drop=True),
+                                          df_.iloc[less_than_min_y_max.index-1][high_col].reset_index(drop=True),
+                                          df_.iloc[less_than_min_y_max.index+1][high_col].reset_index(drop=True)],
+                                          axis=1 ).min(axis=1)
+            
+            to_remove_maxs = [ df_[df_[high_col] == max_].index[0]+1 for i,max_ in ind_remove_maxs.items() ]
+            
+            ####### doing the same for minimum
+            less_than_min_y_min = lows_df[ ( lows_df[low_col].diff(1).abs()/ pd.concat([ lows_df[low_col], 
+                                    lows_df[low_col].shift(1) ], axis = 1 ).max(axis = 1) ) < min_y]
+            
+            # getting the max with higher value
+            ind_remove_mins = pd.concat([df_.iloc[ less_than_min_y_min.index ][low_col].reset_index(drop = True) ,
+                                        df_.iloc[ less_than_min_y_min.index-1 ][low_col].reset_index(drop=True) ,
+                                        df_.iloc[ less_than_min_y_min.index+1 ][low_col].reset_index(drop=True)],
+                                        axis = 1).max(axis = 1) 
+            
+            # remove candids
+            to_remove_mins = [ df_[df_[low_col] == min_].index[0]+1 for i,min_ in ind_remove_mins.items() ]
+    
+            return to_remove_maxs, to_remove_mins
         
-        # adding min between two immediate highs
-        for min in min_idx:
-            ind_min = np.where( min == min_idx )[0][0]
-            
-            if ind_min > len(max_idx)-1: break
-            elif min == min_idx[-1] : break
-            elif max_idx[ind_min] == max_idx[-1]: break
-            
-            if not min in np.arange( max_idx[ind_min] , max_idx[ind_min+1] ):
-                new_min = df_[df_.iloc[ max_idx[ind_min]:max_idx[ind_min + 1] ][low_col].min() == df_[low_col]].index[0]
-                if new_min == min_idx[-1]: break
-                if new_min == min or new_min == min_idx[ind_min+1] or new_min == min_idx[ind_min-1] : continue
-                min_idx = np.append( min_idx , new_min )
-                min_idx.sort()
         
-        self.highs_df = self.df.iloc[max_idx][["datetime",high_col]].values.tolist()
-        self.lows_df = self.df.iloc[min_idx][["datetime",low_col]].values.tolist()
-        return max_idx, min_idx
+        def remove_less_than_min_time(max_idx, min_idx, df_:pd.DataFrame, datetime_col:str = "datetime", 
+                                      min_delta_t:dt.timedelta = min_dist[0] ):
+            
+            highs_df = df_.iloc[max_idx][datetime_col]
+            lows_df = df_.iloc[min_idx][datetime_col]
+            
+            less_than_delta_ts_max = highs_df[highs_df.diff(1).abs() < min_delta_t]
+            remove_candids_max = less_than_delta_ts_max.index.to_list()+(less_than_delta_ts_max.index-1).to_list()
+        
+            less_than_delta_ts_min = lows_df[lows_df.diff(1).abs() < min_delta_t]
+            remove_candids_min = less_than_delta_ts_min.index.to_list()+(less_than_delta_ts_min.index-1).to_list()
+
+            return remove_candids_max, remove_candids_min
+        
+        
+        remove_y_max, remove_y_min = remove_less_than_min_y(max_idx, min_idx, df_)
+        remove_t_max, remove_t_min = remove_less_than_min_time(max_idx, min_idx, df_)
+        
+        final_candids_max = [ rym for rym in remove_y_max if rym in remove_t_max]
+        final_candids_min = [ rym for rym in remove_y_min if rym in remove_t_min]
+        
+        max_idx_ = max_idx.tolist().copy()
+        min_idx_ = min_idx.tolist().copy()
+        
+        for ind in final_candids_max: max_idx_.remove(ind)
+        for ind in final_candids_min: min_idx_.remove(ind)
+        
+        max_idx_ = np.array(max_idx_).copy()
+        min_idx_ = np.array(min_idx_).copy()
+        
+        max_idx_, min_idx_ = fill_between_pivots(max_idx_, min_idx_, df_) 
+        
+        
+        self.highs_df = df_.iloc[max_idx_][["datetime", high_col]].values.tolist()
+        self.lows_df = df_.iloc[min_idx_][["datetime",low_col]].values.tolist()
+
+        return max_idx_, min_idx_
+
     
     
     
