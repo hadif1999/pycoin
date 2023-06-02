@@ -30,7 +30,7 @@ analysis = market_processing(btc_grp_df)
 
 #%% plot pivots min and max
 import numpy as np
-maxs, mins = analysis.get_market_high_lows( 100, min_time_dist = dt.timedelta(days = 0, hours = 2,seconds=0)) 
+maxs, mins = analysis.get_market_high_lows( 100, min_time_dist = dt.timedelta(hours = 2)) 
 
 analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.1)
 

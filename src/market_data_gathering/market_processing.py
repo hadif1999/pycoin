@@ -29,54 +29,61 @@ class market_processing(get_market_plots):
                                 comparator= np.less, order = candle_range , mode = mode )[0]
         
         df_ = self.df.copy()
+        
+        max_idx = max_idx.tolist()
+        min_idx = min_idx.tolist()
                 
-        def fill_between_pivots( max_idx:list|np.ndarray, min_idx:list|np.ndarray , df_:pd.DataFrame ):
-            # adding max between two immediate lows
-            if type(max_idx) == list: max_idx = np.array(max_idx)
-            if type(min_idx) == list: min_idx = np.array(min_idx)
+        def fill_between_pivots( max_idx:list, min_idx:list , df_:pd.DataFrame, high_col:str = high_col,
+                                low_col:str = low_col):
             
-            for max in max_idx: 
-                ind_max = np.where( max == max_idx )[0][0]
-                if ind_max > len(min_idx)-1: break
-                if min_idx[ind_max] == min_idx[-1]: break
-                if max == max_idx[-1]: break
-                
-                if not max in np.arange( min_idx[ind_max] , min_idx[ind_max+1] ):
-                    new_max = df_[df_.iloc[ min_idx[ind_max]:min_idx[ind_max + 2] ][high_col].max() == df_[high_col]].index[0]
-                    if new_max == max_idx[-1]: break
-                    if new_max == max or new_max == max_idx[ind_max+1] or new_max == max_idx[ind_max-1] : continue
-                    max_idx = np.append( max_idx , new_max )
-                    max_idx.sort()
+            max_idx.sort()
+            min_idx.sort()
             
-            # adding min between two immediate highs
-            for min in min_idx:
-                ind_min = np.where( min == min_idx )[0][0]
-                if ind_min > len(max_idx)-1: break
-                if max_idx[ind_min] == max_idx[-1]: break
-                if min == min_idx[-1] : break
+            for max in max_idx:
+                ind_max = max_idx.index(max)
+                if ind_max == len(max_idx)-1 : break
                 
-                if not min in np.arange( max_idx[ind_min] , max_idx[ind_min+1] ):
-                    
-                    new_min = df_[df_.iloc[ max_idx[ind_min]:max_idx[ind_min + 2] ][low_col].min() == df_[low_col]].index[0]
-                    if new_min == min_idx[-1]: break
-                    if new_min == min or new_min == min_idx[ind_min+1] or new_min == min_idx[ind_min-1] : continue
-                    min_idx = np.append( min_idx , new_min )
+                for min in min_idx:
+                    flag_max = False
+                    if min in range(max, max_idx[ind_max+1]): # checking if there is a min between these 2 maxs
+                        flag_max = True
+                        break
+                print(flag_max)
+                print(max)
+                if flag_max == False: # if there was no min between them find one and add to min_idx
+                    new_min = df_.iloc[max:max_idx[ind_max+1]][low_col].min()
+                    if new_min == max_idx[-1] : break
+                    min_idx.append( df_[df_[low_col] == new_min].index[0] )
                     min_idx.sort()
                     
+            ####### doing the same for mins
+            for min in min_idx:
+                ind_min =  min_idx.index(min)
+                if ind_min == len(min_idx)-1 : break
+                
+                for max in max_idx:
+                    flag_min = False
+                    if max in range(min, min_idx[ind_min+1]):
+                        flag_min = True
+                        break
+                    
+                if flag_min == False :
+                    new_max = df_.iloc[min: min_idx[ind_min+1]][high_col].max()
+                    if new_max == min_idx[-1] : break
+                    max_idx.append( df_[df_[high_col] == new_max].index[0] )
+                    max_idx.sort()
+                
             return max_idx, min_idx
                 
                 
-        def remove_less_than_min_time(max_idx:list|np.ndarray, min_idx:list|np.ndarray, df_:pd.DataFrame,
+        def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
                                       datetime_col:str = "datetime",high_col = high_col,
                                       low_col = low_col, min_delta_t:dt.timedelta = min_time_dist ):
             
-            
             highs_df = df_.iloc[max_idx][[datetime_col,high_col]].drop_duplicates()
             lows_df = df_.iloc[min_idx][[datetime_col,low_col]].drop_duplicates()
-            
-            if type(max_idx) == np.ndarray: max_idx = max_idx.tolist()
-            if type(min_idx) == np.ndarray: min_idx = min_idx.tolist()
-                       
+                     
+            # removing highs closer than specified time  
             while highs_df.diff(1)[datetime_col].min() < min_delta_t: # doing for maxs
                 time_diff = highs_df.diff(1)[datetime_col]
                 to_remove_pair_ind = highs_df[time_diff.min() == time_diff].index[0]
@@ -84,7 +91,8 @@ class market_processing(get_market_plots):
                 if ind == len(highs_df)-1 :break
                 to_remove_ind = highs_df[highs_df.iloc[ind-1:ind+1][high_col].min() == highs_df[high_col]].index[0]
                 highs_df.drop(to_remove_ind, axis = 0, inplace = True)
-                
+            
+            # removing lows closer than specified time 
             while lows_df.diff(1)[datetime_col].min() < min_delta_t: # doing for mins
                 time_diff = lows_df.diff(1)[datetime_col]
                 to_remove_pair_ind = lows_df[time_diff.min() == time_diff].index[0]
@@ -95,8 +103,9 @@ class market_processing(get_market_plots):
                 
             return highs_df.index.to_list(), lows_df.index.to_list()
                 
+        ### filtering high and lows        
         max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_)
-
+        # max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
 
         self.highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates().values.tolist()
         self.lows_df = df_.iloc[min_idx][["datetime",low_col]].drop_duplicates().values.tolist()
