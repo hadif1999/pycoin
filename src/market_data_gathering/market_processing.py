@@ -30,7 +30,6 @@ class market_processing(get_market_plots):
         
         
         df_ = self.df.copy()
-        print(min_dist)
 
                 
         def fill_between_pivots( max_idx:np.ndarray, min_idx:np.ndarray , df_:pd.DataFrame ):
@@ -68,29 +67,27 @@ class market_processing(get_market_plots):
         def remove_less_than_min_y(max_idx:np.ndarray|list, min_idx: np.ndarray|list, df_:pd.DataFrame, 
                                    min_y:float = min_dist[1], high_col:str = high_col, low_col:str = low_col):
             
-            highs_df = df_.iloc[max_idx][["datetime", high_col]]
-            lows_df = df_.iloc[min_idx][["datetime", low_col]]
+            highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates()
+            lows_df = df_.iloc[min_idx][["datetime", low_col]].drop_duplicates()
             
             # finding rows below min change
             less_than_min_y_max = highs_df[ ( highs_df[high_col].diff(1).abs()/ pd.concat([ highs_df[high_col], 
-                                      highs_df[high_col].shift(1) ], axis = 1 ).max(axis = 1) ) < min_y ]
+                                      highs_df[high_col].shift(1) ], axis = 1 ).max(axis = 1) ) < min_y/100 ]
             
             # finding the maxs below min y change
             ind_remove_maxs = pd.concat( [df_.iloc[less_than_min_y_max.index][high_col].reset_index(drop=True),
-                                          df_.iloc[less_than_min_y_max.index-1][high_col].reset_index(drop=True),
-                                          df_.iloc[less_than_min_y_max.index+1][high_col].reset_index(drop=True)],
+                                          df_.iloc[less_than_min_y_max.index-1][high_col].reset_index(drop=True)],
                                           axis=1 ).min(axis=1)
             
             to_remove_maxs = [ df_[df_[high_col] == max_].index[0]+1 for i,max_ in ind_remove_maxs.items() ]
             
             ####### doing the same for minimum
             less_than_min_y_min = lows_df[ ( lows_df[low_col].diff(1).abs()/ pd.concat([ lows_df[low_col], 
-                                    lows_df[low_col].shift(1) ], axis = 1 ).max(axis = 1) ) < min_y]
+                                    lows_df[low_col].shift(1) ], axis = 1 ).max(axis = 1) ) < min_y/100]
             
             # getting the max with higher value
             ind_remove_mins = pd.concat([df_.iloc[ less_than_min_y_min.index ][low_col].reset_index(drop = True) ,
-                                        df_.iloc[ less_than_min_y_min.index-1 ][low_col].reset_index(drop=True) ,
-                                        df_.iloc[ less_than_min_y_min.index+1 ][low_col].reset_index(drop=True)],
+                                        df_.iloc[ less_than_min_y_min.index-1 ][low_col].reset_index(drop=True)],
                                         axis = 1).max(axis = 1) 
             
             # remove candids
@@ -102,23 +99,29 @@ class market_processing(get_market_plots):
         def remove_less_than_min_time(max_idx, min_idx, df_:pd.DataFrame, datetime_col:str = "datetime", 
                                       min_delta_t:dt.timedelta = min_dist[0] ):
             
-            highs_df = df_.iloc[max_idx][datetime_col]
-            lows_df = df_.iloc[min_idx][datetime_col]
-            
-            less_than_delta_ts_max = highs_df[highs_df.diff(1).abs() < min_delta_t]
-            remove_candids_max = less_than_delta_ts_max.index.to_list()+(less_than_delta_ts_max.index-1).to_list()
-        
-            less_than_delta_ts_min = lows_df[lows_df.diff(1).abs() < min_delta_t]
-            remove_candids_min = less_than_delta_ts_min.index.to_list()+(less_than_delta_ts_min.index-1).to_list()
-
-            return remove_candids_max, remove_candids_min
+            highs_df = df_.iloc[max_idx][datetime_col].drop_duplicates()
+            lows_df = df_.iloc[min_idx][datetime_col].drop_duplicates()
+           
+            while highs_df.diff(1).min() <= min_delta_t: # doing for maxs
+                ind = highs_df[highs_df.diff(1).min() == highs_df.diff(1)].index[0]
+                highs_df.drop(ind, axis = 0, inplace = True)
+                
+            while lows_df.diff(1).min() <= min_delta_t: # doing for mins
+                ind = lows_df[lows_df.diff(1).min() == lows_df.diff(1)].index[0]
+                lows_df.drop(ind, axis = 0, inplace = True)
+                
+            return highs_df.index.to_list(), lows_df.index.to_list()
         
         
         remove_y_max, remove_y_min = remove_less_than_min_y(max_idx, min_idx, df_)
         remove_t_max, remove_t_min = remove_less_than_min_time(max_idx, min_idx, df_)
         
-        final_candids_max = [ rym for rym in remove_y_max if rym in remove_t_max]
-        final_candids_min = [ rym for rym in remove_y_min if rym in remove_t_min]
+        final_candids_max = [ rtm for rtm in remove_t_max if rtm in remove_y_max]
+        final_candids_min = [ rtm for rtm in remove_t_min if rtm in remove_y_min]
+        
+        print(remove_y_min)
+        print(remove_t_min)
+        print(final_candids_min)
         
         max_idx_ = max_idx.tolist().copy()
         min_idx_ = min_idx.tolist().copy()
@@ -132,10 +135,14 @@ class market_processing(get_market_plots):
         max_idx_, min_idx_ = fill_between_pivots(max_idx_, min_idx_, df_) 
         
         
-        self.highs_df = df_.iloc[max_idx_][["datetime", high_col]].values.tolist()
-        self.lows_df = df_.iloc[min_idx_][["datetime",low_col]].values.tolist()
+        # self.highs_df = df_.iloc[max_idx_][["datetime", high_col]].values.tolist()
+        # self.lows_df = df_.iloc[min_idx_][["datetime",low_col]].values.tolist()
 
-        return max_idx_, min_idx_
+
+        self.highs_df = df_.iloc[max_idx_][["datetime", high_col]].drop_duplicates()
+        self.lows_df = df_.iloc[min_idx_][["datetime",low_col]].drop_duplicates()
+
+        return max_idx_ , min_idx_
 
     
     

@@ -30,14 +30,14 @@ analysis = market_processing(btc_grp_df)
 
 #%% plot pivots min and max
 import numpy as np
-maxs, mins = analysis.get_market_high_lows(100, min_dist = [dt.timedelta(seconds = 2400),10]) 
+maxs, mins = analysis.get_market_high_lows(100, min_dist = [dt.timedelta(seconds = 30000),20]) 
 
-analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.1)
+# analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.1)
 
 # show added min and max pivots
-btc_15m_grp_fig.show(config = config_)
+# btc_15m_grp_fig.show(config = config_)
 
-market_plot.remove_all_shapes(btc_15m_grp_fig)
+# market_plot.remove_all_shapes(btc_15m_grp_fig)
 
 
 # %% evaluating market trend with MA
