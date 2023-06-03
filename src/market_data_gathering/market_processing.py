@@ -14,22 +14,24 @@ class market_processing(get_market_plots):
     
     def __init__(self, dataframe:pd.DataFrame) -> None:
         self.df = dataframe
-        self.maxs_series = None
-        self.mins_series = None
+        self.highs_df = None
+        self.lows_df = None
+        self.pivots = {"highs": {}, "lows": {}}
         
         
     def get_market_high_lows(self, candle_range:int = 100, mode:str = "clip", 
                              high_col:str = "high", low_col:str = "low", 
-                             min_time_dist:list = dt.timedelta(seconds = 24000),fill_between_two:bool = True,
+                             min_time_dist:list = dt.timedelta(seconds = 24000),fill_between_two_same:bool = True,
                              remove_under_min_time_dist:bool = True):
         
+        df_ = self.df.copy()
+                
         # evaluating min and max from argrelextrema function which finds high and lows
-        max_idx = argrelextrema(data = np.array(self.df[high_col].values.tolist()), 
+        max_idx = argrelextrema(data = np.array(df_[high_col].values.tolist()), 
                                 comparator= np.greater, order = candle_range, mode = mode )[0]
-        min_idx = argrelextrema(data = np.array(self.df[low_col].values.tolist()), 
+        min_idx = argrelextrema(data = np.array(df_[low_col].values.tolist()), 
                                 comparator= np.less, order = candle_range , mode = mode )[0]
         
-        df_ = self.df.copy()
         
         max_idx = max_idx.tolist()
         min_idx = min_idx.tolist()
@@ -117,18 +119,81 @@ class market_processing(get_market_plots):
                 
         ### filtering and filling between high and lows with added functions       
         if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_)
-        if fill_between_two: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
+        if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
         if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_)
-        # if fill_between_two: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
 
         self.highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates().values.tolist()
         self.lows_df = df_.iloc[min_idx][["datetime",low_col]].drop_duplicates().values.tolist()
+        
+        self.pivots["highs"]["idx"] = max_idx
+        self.pivots["highs"]["column"] = high_col
+        self.pivots["highs"]["df_val"] = self.highs_df
+        
+        self.pivots["lows"]["idx"] = min_idx
+        self.pivots["lows"]["column"] = low_col
+        self.pivots["lows"]["df_val"] = self.lows_df
 
         return max_idx , min_idx
+    
+    
+    
+    def eval_trend_with_high_lows(self, num_of_pivots_to_verify_trend:int = 2, 
+                                  trend_col_name:str = "high_low_trend"):
+        try:
+            max_idx = self.pivots["highs"]["idx"]
+            min_idx = self.pivots["lows"]["idx"]
+        except:
+            raise Exception("no high and lows calculated yet! first run obj.get_market_high_lows.")
+        
+        df_ = self.df.copy()
+        
+        highs = df_.iloc[max_idx][self.pivots["highs"]['column']]
+        lows = df_.iloc[min_idx][self.pivots["lows"]['column']]
+        
+        hhs = [ highs[highs.diff(i+1) > 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)]  
+        final_hhs = hhs[0]
+        for i in range(1,len(hhs)):
+            final_hhs = list( set(final_hhs).intersection(hhs[i]) )
+            final_hhs.sort()
+            
+        lhs = [ highs[highs.diff(i+1) < 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)] 
+        final_lhs = lhs[0]
+        for i in range(1,len(lhs)):
+            final_lhs = list( set(final_lhs).intersection(lhs[i]) )
+            final_lhs.sort()
 
-    
-    
-    
+        lls = [ lows[lows.diff(i+1) < 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)] 
+        final_lls = lls[0]
+        for i in range(1,len(lls)):
+            final_lls = list( set(final_lls).intersection(lls[i]) )
+            final_lls.sort()
+        
+        hls = [ lows[lows.diff(i+1) > 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)] 
+        final_hls = hls[0]
+        for i in range(1,len(hls)):
+            final_hls = list( set(final_hls).intersection(hls[i]) )
+            final_hls.sort()
+        
+        df_[trend_col_name] = 0 # trend col initialization
+        
+        highs_ind = final_hhs + final_hls
+        highs_ind.sort()
+        
+        lows_ind = final_lhs + final_lls
+        lows_ind.sort()
+        
+        for i in range(len(highs_ind)):
+            if i == len(highs_ind)-1 : break
+            df_[trend_col_name].iloc[highs_ind[i]: highs_ind[i+1]] = 1
+            
+        for i in range(len(lows_ind)):
+            if i == len(lows_ind)-1 : break
+            df_[trend_col_name].iloc[lows_ind[i]: lows_ind[i+1]] = -1
+            
+        self.df = df_
+        return df_
+            
+        
     
     def plot_high_lows(self, fig:go.Figure, min_color:str = "red", max_color:str = "green" ,
                                 R:int = 400, y_scale:float = 0.1):
@@ -217,7 +282,8 @@ class market_processing(get_market_plots):
     
     def eval_trend_with_MACD(self, column:str = "close", window_slow:int = 26 , window_fast:int = 12, 
                              window_sign:int = 9 , fill_na:bool = True, drop_MACD_col:bool = False,
-                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, inplace:bool = True):
+                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, inplace:bool = True,
+                             trend_col_name:str = 'MACD_trend'):
         
         df_ = self.df.copy()
         # calculating MACD
@@ -227,12 +293,12 @@ class market_processing(get_market_plots):
         df_['MACD'] = macd.macd()
         df_['signal_line'] = macd.macd_signal()
         df_['MACD_diff'] = df_['MACD'] - df_['signal_line']
-        df_['MACD_trend'] = np.where(df_['MACD_diff'] > 0, up_trends_as, 
+        df_[trend_col_name] = np.where(df_['MACD_diff'] > 0, up_trends_as, 
                                      np.where(df_['MACD_diff'] < 0, down_trends_as, side_trends_as))
         
         if drop_MACD_col : df_.drop(['signal_line','MACD','MACD_diff'], axis = 1, inplace = True)
         
-        overall_trend = df_["MACD_trend"].iloc[-1]
+        overall_trend = df_[trend_col_name].iloc[-1]
         
         if inplace: self.df = df_
         return df_, overall_trend
@@ -240,7 +306,8 @@ class market_processing(get_market_plots):
     
     
     def eval_trend_with_ROC(self, column:str = "close" ,nperiods:int = 14, drop_ROC:bool = False, 
-                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0):
+                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, 
+                            trend_col_name:str = 'ROC_trend'):
         
         df_ = self.df.copy()
         df_['ROC'] = ((df_[column] - df_[column].shift(nperiods)) / df_[column].shift(nperiods)) * 100
@@ -250,11 +317,11 @@ class market_processing(get_market_plots):
 
         # Determine the trend based on the ROC
         threshold = 0  # Threshold for trend determination
-        df_['ROC_trend'] = np.where(df_['ROC'] > threshold, up_trends_as, 
+        df_[trend_col_name] = np.where(df_['ROC'] > threshold, up_trends_as, 
                                     np.where(df_['ROC'] < -threshold, down_trends_as, side_trends_as))
 
         # Get the overall trend based on the last row
-        overall_trend = df_['ROC_trend'].iloc[-1]
+        overall_trend = df_[trend_col_name].iloc[-1]
         
         if drop_ROC : df_.drop("ROC", axis = 1 , inplace = True)
         self.df = df_
