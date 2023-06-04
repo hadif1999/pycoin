@@ -125,6 +125,9 @@ class market_processing(get_market_plots):
         self.highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates().values.tolist()
         self.lows_df = df_.iloc[min_idx][["datetime",low_col]].drop_duplicates().values.tolist()
         
+        max_idx.sort()
+        min_idx.sort()
+        
         self.pivots["highs"]["idx"] = max_idx
         self.pivots["highs"]["column"] = high_col
         self.pivots["highs"]["df_val"] = self.highs_df
@@ -137,60 +140,56 @@ class market_processing(get_market_plots):
     
     
     
-    def eval_trend_with_high_lows(self, num_of_pivots_to_verify_trend:int = 2, 
-                                  trend_col_name:str = "high_low_trend"):
+    def eval_trend_with_high_lows(self, trend_col_name:str = "high_low_trend", inplace:bool = True,
+                                  high_trend_label:int = 1, low_trend_label:int = -1, side_trend_label:int = 0):
         try:
             max_idx = self.pivots["highs"]["idx"]
             min_idx = self.pivots["lows"]["idx"]
+            high_col = self.pivots["highs"]["column"]
+            low_col = self.pivots["lows"]["column"]
         except:
             raise Exception("no high and lows calculated yet! first run obj.get_market_high_lows.")
         
         df_ = self.df.copy()
+        df_[trend_col_name] = side_trend_label
         
-        highs = df_.iloc[max_idx][self.pivots["highs"]['column']]
-        lows = df_.iloc[min_idx][self.pivots["lows"]['column']]
-        
-        hhs = [ highs[highs.diff(i+1) > 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)]  
-        final_hhs = hhs[0]
-        for i in range(1,len(hhs)):
-            final_hhs = list( set(final_hhs).intersection(hhs[i]) )
-            final_hhs.sort()
-            
-        lhs = [ highs[highs.diff(i+1) < 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)] 
-        final_lhs = lhs[0]
-        for i in range(1,len(lhs)):
-            final_lhs = list( set(final_lhs).intersection(lhs[i]) )
-            final_lhs.sort()
+        for max_ind, min_ind, i  in zip(max_idx, min_idx, range( max( len(max_idx), len(min_idx) ) ) ):
 
-        lls = [ lows[lows.diff(i+1) < 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)] 
-        final_lls = lls[0]
-        for i in range(1,len(lls)):
-            final_lls = list( set(final_lls).intersection(lls[i]) )
-            final_lls.sort()
-        
-        hls = [ lows[lows.diff(i+1) > 0].index.to_list() for i in range(num_of_pivots_to_verify_trend)] 
-        final_hls = hls[0]
-        for i in range(1,len(hls)):
-            final_hls = list( set(final_hls).intersection(hls[i]) )
-            final_hls.sort()
-        
-        df_[trend_col_name] = 0 # trend col initialization
-        
-        highs_ind = final_hhs + final_hls
-        highs_ind.sort()
-        
-        lows_ind = final_lhs + final_lls
-        lows_ind.sort()
-        
-        for i in range(len(highs_ind)):
-            if i == len(highs_ind)-1 : break
-            df_[trend_col_name].iloc[highs_ind[i]: highs_ind[i+1]] = 1
+            if i > 0 :
+                # compare for uptrend ( if we have higher highs and higher lows we have uptrend)
+                is_hh = df_[high_col].iloc[max_ind] > df_[high_col].iloc[last_max_ind]
+                is_hl = df_[low_col].iloc[min_ind] > df_[low_col].iloc[last_min_ind] 
+                
+                # compare for downtrend ( if we have lower highs and lower lows we have downtrend)
+                is_lh = df_[high_col].iloc[max_ind] < df_[high_col].iloc[last_max_ind]
+                is_ll = df_[low_col].iloc[min_ind] < df_[low_col].iloc[last_min_ind] 
+                
+                # assign high_trend_ labels to pivots that are hh and hl (same for downtrend)
+                if is_hh and is_hl: 
+                    df_.loc[ max(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = high_trend_label
+                elif is_lh and is_ll: 
+                    df_.loc[ max(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = low_trend_label
+                
+                # labeling the last pivot                
+                if i == min( len(max_idx), len(min_idx) )-1 and len(max_idx) != len(min_idx):
+                    
+                    if len(min_idx) > len(max_idx) : 
+                        if (df_[low_col].iloc[min_idx[-1]] < df_[low_col].iloc[min_ind] and
+                            df_[low_col].iloc[min_idx[-1]] < df_[low_col].iloc[last_min_ind]) :
+                            
+                            df_.loc[min_ind: min_idx[-1], trend_col_name] = low_trend_label
+                            
+                    if len(max_idx) > len(min_idx):
+                        if (df_[high_col].iloc[max_idx[-1]] > df_[high_col].iloc[max_ind] and
+                            df_[high_col].iloc[max_idx[-1]] > df_[high_col.iloc[last_max_ind]]):
+                            
+                            df_.loc[max_ind: max_idx[-1], trend_col_name] = high_trend_label
+                          
+                
+            last_max_ind = max_ind
+            last_min_ind = min_ind
             
-        for i in range(len(lows_ind)):
-            if i == len(lows_ind)-1 : break
-            df_[trend_col_name].iloc[lows_ind[i]: lows_ind[i+1]] = -1
-            
-        self.df = df_
+        if inplace : self.df = df_
         return df_
             
         

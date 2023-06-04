@@ -12,7 +12,7 @@ btc_15min_df = market_plot.load_kline_data('BTC-USDT|15min.csv', reverse = True)
 
 btc_15m_grp_fig, btc_grp_df = market_plot.plot_candlestick_plotly(btc_15min_df, 
                                                                   plot_by_grp = True, year = 2021, 
-                                                                  month = 8  , fig_size = [1100,600],
+                                                                  month = 2  , fig_size = [1100,600],
                                                                   slider = False)
 
 # define interactive options to use 
@@ -31,19 +31,18 @@ import datetime as dt
 
 maxs, mins = analysis.get_market_high_lows( 100, min_time_dist = dt.timedelta(hours=13)) 
 
-analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 1)
+analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.8)
 
 # show added min and max pivots
 btc_15m_grp_fig.show(config = config_)
 
-market_plot.remove_all_shapes(btc_15m_grp_fig)
+# market_plot.remove_all_shapes(btc_15m_grp_fig)
 
 #%% eval trend with high lows
-trend_fig = market_plot.empty_figure(fig_size = [1100,600], slider = False)
-df_high_low_trend = analysis.eval_trend_with_high_lows(num_of_pivots_to_verify_trend=1)
-analysis.draw_trend_highlight(trend_fig, column = "high_low_trend")
+df_high_low_trend = analysis.eval_trend_with_high_lows()
+analysis.draw_trend_highlight(btc_15m_grp_fig, column = "high_low_trend")
 
-trend_fig.show(config = config_)
+btc_15m_grp_fig.show(config = config_)
 
 # %% evaluating market trend with MA
 
