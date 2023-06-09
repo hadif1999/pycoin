@@ -476,6 +476,7 @@ class get_market_plots:
                                                     decrease_color = decrease_color)
         
         fig.add_trace(highlight_candle)
+        fig.update_layout(showlegend=False)
         
     
     
@@ -489,6 +490,8 @@ class get_market_plots:
             color (str, optional): desired color of candle. Defaults to "blue".
         """        
         self.highlight_candle_range(fig, time, time , color , color)  
+        fig.update_layout(showlegend=False)        
+        
         
         
     def empty_figure(self, **kwargs):

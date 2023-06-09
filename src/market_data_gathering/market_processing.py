@@ -121,6 +121,8 @@ class market_processing(get_market_plots):
         if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_)
         if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
         if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_)
+        if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
+
 
         self.highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates().values.tolist()
         self.lows_df = df_.iloc[min_idx][["datetime",low_col]].drop_duplicates().values.tolist()
@@ -166,9 +168,9 @@ class market_processing(get_market_plots):
                 
                 # assign high_trend_ labels to pivots that are hh and hl (same for downtrend)
                 if is_hh and is_hl: 
-                    df_.loc[ max(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = high_trend_label
+                    df_.loc[ min(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = high_trend_label
                 elif is_lh and is_ll: 
-                    df_.loc[ max(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = low_trend_label
+                    df_.loc[ min(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = low_trend_label
                 
                 # labeling the last pivot                
                 if i == min( len(max_idx), len(min_idx) )-1 and len(max_idx) != len(min_idx):
@@ -181,11 +183,10 @@ class market_processing(get_market_plots):
                             
                     if len(max_idx) > len(min_idx):
                         if (df_[high_col].iloc[max_idx[-1]] > df_[high_col].iloc[max_ind] and
-                            df_[high_col].iloc[max_idx[-1]] > df_[high_col.iloc[last_max_ind]]):
+                            df_[high_col].iloc[max_idx[-1]] > df_[high_col].iloc[last_max_ind]):
                             
                             df_.loc[max_ind: max_idx[-1], trend_col_name] = high_trend_label
                           
-                
             last_max_ind = max_ind
             last_min_ind = min_ind
             
@@ -257,6 +258,9 @@ class market_processing(get_market_plots):
         """        
         
         if len(windows) > 2 : raise Exception("len of windows must be 2")
+        if windows[0] > windows[1]: raise Exception("short term MA window must entered first.")
+        elif windows[0] == windows[1]: raise Exception("short and long term windows can't be equal!")
+                    
         df_with_MA = self.calc_MAs(column = column, windows = windows)
         
         up_trends = df_with_MA.query(f"MA{str(windows[0])} > MA{str(windows[1])}").copy()
@@ -344,6 +348,11 @@ class market_processing(get_market_plots):
         for name,grp in trend_grps :
             for i,row in grp.iterrows():
                 super().highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
+                
+        if fig.layout.title.text != None: fig.update_layout(title = fig.layout.title.text +" , "+
+                                                            f"trend evaluated with : {column}" )
+        
+        else : fig.update_layout(title = f"trend evaluated with : {column}" )
         
     
         
