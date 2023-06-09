@@ -233,25 +233,26 @@ class get_market_plots:
         """        
         if plot_by_grp:
             
-            get_grp = [] # this will keep selected group data
-            grp_by = ["year","month","day"] # this will keep what we want to grp_by
+            
+            grp_by = {"year":0, "month":0, "day":0} # this will keep what we want to grp_by
             
             
-            for item in grp_by: # keeps the grp item if entered in fun args else removes from grp_by
-                if item in args.keys():
-                    if type(args[item]) == int :
-                        get_grp.append(args[item])
+            for key in grp_by.copy().keys() : # keeps the grp item if entered in fun args else removes from grp_by
+                if key in args.keys():
+                    if type(args[key]) == int :
+                        grp_by[key] = args[key]
                     else: raise Exception("year, month or day must be int!")
-                else: grp_by.remove(item)
+                else: del grp_by[key]
+                
             
+           
+            grps = self.group_klines(dataframe , list(grp_by.keys()) ) # group data by entered dates
             
-            grps = self.group_klines(dataframe , grp_by ) # group data by entered dates
-            
-            if len(get_grp) == 1 : grp = grps.get_group( get_grp[0] ) 
-            else: grp = grps.get_group( tuple(get_grp) )      # get specified grp of data 
+            if len( list(grp_by.keys()) ) == 1 : grp = grps.get_group( list(grp_by.values())[0] ) 
+            else: grp = grps.get_group( tuple(grp_by.values()) )      # get specified grp of data 
             grp = grp.reset_index(drop = True)
             
-            str_temp = str(grp_by)+" : "+str(get_grp) 
+            str_temp = str(grp_by)
             
             # if the name of df columns are not standard they will be specified here
             if "x" in args.keys() and "open" in args.keys() and "close" in args.keys() and "low" in args.keys() and "high" in args.keys():

@@ -11,8 +11,8 @@ btc_15min_df = market_plot.load_kline_data('BTC-USDT|15min.csv', reverse = True)
 #%% plot interactive candlestick data and pivots
 
 btc_15m_grp_fig, btc_grp_df = market_plot.plot_candlestick_plotly(btc_15min_df, 
-                                                                  plot_by_grp = True, year = 2022, 
-                                                                  month = 11 , fig_size = [1100,600],
+                                                                  plot_by_grp = True, year = 2022, month = 5,
+                                                                  fig_size = [1100,600],
                                                                   slider = False)
 
 # define interactive options to use 
@@ -29,7 +29,7 @@ analysis = market_processing(btc_grp_df)
 import numpy as np
 import datetime as dt
 
-maxs, mins = analysis.get_market_high_lows( 100 , min_time_dist = dt.timedelta(hours=13)) 
+maxs, mins = analysis.get_market_high_lows( 50 , min_time_dist = dt.timedelta(hours=13)) 
 
 analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.2)
 
