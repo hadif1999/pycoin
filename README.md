@@ -17,5 +17,8 @@ instead you must have a column named "datetime" that keeps time index of each ro
 example:
 ```
 pip install pycoin
+import pandas as pd 
+import plotly
+
 ```
 
