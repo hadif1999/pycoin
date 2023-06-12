@@ -14,3 +14,8 @@ Note: many of the functions in this package works with standard column names, st
 Note: row indexes of your input dataframe must be integer not datetime or timestamp format.
 instead you must have a column named "datetime" that keeps time index of each row. 
 
+example:
+```
+pip install pycoin
+```
+
