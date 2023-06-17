@@ -23,6 +23,24 @@ class market_processing(get_market_plots):
                              high_col:str = "high", low_col:str = "low", 
                              min_time_dist:list = dt.timedelta(seconds = 24000),fill_between_two_same:bool = True,
                              remove_under_min_time_dist:bool = True):
+        """this function evaluates input market highs, lows. and returns their index. 
+
+        Args:
+            candle_range (int, optional): looks for highs and lows in every n candles. Defaults to 100.
+            mode (str, optional): how to treat with start and end of bound. Defaults to "clip".
+            high_col (str, optional): col to look for highs in. Defaults to "high".
+            low_col (str, optional): col to look for lows in. Defaults to "low".
+            min_time_dist (list, optional): min time distance between two similar pivots to get as a new pivot
+                . Defaults to dt.timedelta(seconds = 24000).
+            fill_between_two_same (bool, optional): if True finds a low between to immediate highs
+                and finds a new max between two immediate lows. Defaults to True.
+            remove_under_min_time_dist (bool, optional): min_time_dist will be ignored if this arg is False
+            . Defaults to True.
+
+        Returns:
+            min_idx (list): indices of lows
+            max_idx (list): indices of highs
+        """        
         
         df_ = self.df.copy()
                 
@@ -36,6 +54,7 @@ class market_processing(get_market_plots):
         max_idx = max_idx.tolist()
         min_idx = min_idx.tolist()
                 
+        # a helper func that fills between two immediate pivots
         def fill_between_pivots( max_idx:list, min_idx:list , df_:pd.DataFrame, high_col:str = high_col,
                                 low_col:str = low_col):
             
@@ -86,7 +105,7 @@ class market_processing(get_market_plots):
                 
             return max_idx_, min_idx_
                 
-                
+        # a helper func that removes the pivot that very close in time index to next/previous pivot
         def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
                                       datetime_col:str = "datetime",high_col = high_col,
                                       low_col = low_col, min_delta_t:dt.timedelta = min_time_dist ):
@@ -144,6 +163,20 @@ class market_processing(get_market_plots):
     
     def eval_trend_with_high_lows(self, trend_col_name:str = "high_low_trend", inplace:bool = True,
                                   high_trend_label:int = 1, low_trend_label:int = -1, side_trend_label:int = 0):
+        """evaluates trend with high and lows evaluated with remove_less_than_min_time method.
+
+        Args:
+            trend_col_name (str, optional): final name of trend col name generate by this method. 
+                Defaults to "high_low_trend".
+            inplace (bool, optional): add the trend col to self.df or not. Defaults to True.
+            high_trend_label (int, optional): label of high trend classes. Defaults to 1.
+            low_trend_label (int, optional): label of low trend classes. Defaults to -1.
+            side_trend_label (int, optional): label of side trend classes. Defaults to 0.
+
+        Returns:
+            df_(pd.Dataframe): updated dataframe with evaluated trend labels.
+        """        
+        
         try:
             max_idx = self.pivots["highs"]["idx"]
             min_idx = self.pivots["lows"]["idx"]
@@ -197,6 +230,18 @@ class market_processing(get_market_plots):
     
     def plot_high_lows(self, fig:go.Figure, min_color:str = "red", max_color:str = "green" ,
                                 R:int = 400, y_scale:float = 0.1):
+        """adds circle shapes for highs and lows for visualizing.
+
+        Args:
+            fig (go.Figure): adds shapes to this fig
+            min_color (str, optional): color of lows circle. Defaults to "red".
+            max_color (str, optional): color of highs circle. Defaults to "green".
+            R (int, optional): radius of circle. Defaults to 400.
+            y_scale (float, optional): scales the y coord of circle(price) if needed. Defaults to 0.1.
+
+        Raises:
+            ValueError: _description_
+        """        
         
         if self.highs_df == None or self.lows_df == None : 
             raise ValueError("""you didn't calculate highs and lows yet!
@@ -248,9 +293,9 @@ class market_processing(get_market_plots):
             column (str, optional): _description_. Defaults to "close".
             windows (List, optional): _description_. Defaults to [50,200].
             drop_MA_cols (bool, optional): drop calculated MA cols after calculation or not. Defaults to False.
-            up_trends_as (int, optional): label of uptrend values. Defaults to 1.
-            down_trends_as (int, optional): label of down trend values. Defaults to -1.
-            side_trends_as (int, optional): label of side trend values. Defaults to 0.
+            up_trends_as (int, optional): label of up_trend values. Defaults to 1.
+            down_trends_as (int, optional): label of down_trend values. Defaults to -1.
+            side_trends_as (int, optional): label of side_trend values. Defaults to 0.
             inplace(bool): add column to dataframe entered at constructor or not. Defaults to True.
 
         Returns:
@@ -335,6 +380,17 @@ class market_processing(get_market_plots):
     def draw_trend_highlight(self, fig:go.Figure, column:str = "MA_trend", dataframe:pd.DataFrame = None
                    , up_trend_color:str = "blue", down_trend_color:str = "red"
                    , side_trend_color:str = "yellow"):
+        """visualizes the evaluated trend with highlighted candles.
+
+        Args:
+            fig (go.Figure): add trend plot to this fig.
+            column (str, optional): name of the trend col you want to plot. Defaults to "MA_trend".
+            dataframe (pd.DataFrame, optional): you can give a new df else it will use self.df.
+            Defaults to None.
+            up_trend_color (str, optional): color of up_trend candles. Defaults to "blue".
+            down_trend_color (str, optional): color of down_trend candles. Defaults to "red".
+            side_trend_color (str, optional): color of side_trend candles. Defaults to "yellow".
+        """        
         
         try: df_ = dataframe.copy()
         except: df_ = self.df.copy()

@@ -1,8 +1,12 @@
+### example of plotting a market as candlesticks, groupby of market, get market high and lows, evaluate 
+## trend with diffrent methods and visualizing them
+
+
 #%% import market get data lib
-from src.market_data_kline_plots.market_plotter import get_market_plots
+from pycoin.market_data_kline_plots.market_plotter import get_market_plots
 
 #%% load data
-market_plot = get_market_plots('BTC-USDT')
+market_plot = get_market_plots(symbol = 'BTC-USDT')
 btc_15min_df = market_plot.load_kline_data('BTC-USDT|15min.csv', reverse = True)
 
 # current value of symbol
@@ -21,7 +25,7 @@ config_ = {'modeBarButtonsToAdd':['drawline','drawcircle','drawrect','eraseshape
 
 #%% market processing lib
 
-from src.market_data_gathering.market_processing import market_processing
+from pycoin.market_data_gathering.market_processing import market_processing
 
 analysis = market_processing(btc_grp_df)
 
