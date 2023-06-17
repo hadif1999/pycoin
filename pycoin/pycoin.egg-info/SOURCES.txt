@@ -1,0 +1,11 @@
+README.md
+setup.py
+src/market_data_gathering/__init__.py
+src/market_data_gathering/market_processing.py
+src/market_data_kline_plots/__init__.py
+src/market_data_kline_plots/market_plotter.py
+src/pycoin.egg-info/PKG-INFO
+src/pycoin.egg-info/SOURCES.txt
+src/pycoin.egg-info/dependency_links.txt
+src/pycoin.egg-info/requires.txt
+src/pycoin.egg-info/top_level.txt
