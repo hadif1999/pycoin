@@ -18,7 +18,7 @@ btcusd_h4_df = market_analysis.download_kline_as_df(reverse_df = True,
                start_timestamp= dt.datetime(2017, 1, 1).timestamp().__int__(), inplace= True
                ) 
 
-market_analysis.save_market()
+# market_analysis.save_market()
 
 # btc_4h_df = market_analysis.load_kline_data('BTC-USDT|15min.csv', reverse = True)
 
@@ -29,10 +29,11 @@ market_analysis.save_market()
 
 # ploting just 1 month for better visualization 
 plots = Market_Plotter(market_analysis)
-btc_grp_fig = plots.plot_candlestick_plotly( btcusd_h4_df, 
-                                                         plot_by_grp = False, year = 2021, month = 2,
-                                                         fig_size = [1100,600],
-                                                         slider = False)
+btc_grp_fig,_ = plots.plot_market( plot_by_grp = True, year = 2021,
+                                   fig_size = [1100,600],
+                                   replace_df_with_grp = True, 
+                                   slider = False
+                                 )
 
 # define interactive options to use 
 config_ = {'modeBarButtonsToAdd':['drawline','drawcircle','drawrect','eraseshape']}
@@ -42,15 +43,11 @@ btc_grp_fig.show(config = config_)
 import numpy as np
 import datetime as dt
 
-maxs, mins = market_analysis.get_market_high_lows( 100 , 
+maxs, mins = market_analysis.get_market_high_lows( candle_range = 100 , 
                                                   min_time_dist = dt.timedelta(hours=13)) 
 
-plots.plot_high_lows(btc_grp_fig, R = 10000, y_scale = 0.1)
-
 # show added min and max pivots
-btc_grp_fig.show(config = config_)
-
-plots.remove_all_shapes( btc_grp_fig )
+plots.plot_high_lows(R = 10000, y_scale = 0.1)
 
 # market_plot.remove_all_shapes(btc_15m_grp_fig)
 

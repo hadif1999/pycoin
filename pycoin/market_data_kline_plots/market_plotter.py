@@ -16,7 +16,6 @@ class Market_Plotter():
     
     def __init__(self, process_obj) -> None:
         self.market_obj = process_obj
-        
         self.update_params
     
     @property
@@ -146,7 +145,8 @@ class Market_Plotter():
     
     
     
-    def plot_candlestick_plotly(self , dataframe:pd.DataFrame, plot_by_grp:bool = True , **args):
+    def plot_market(self , plot_by_grp:bool = True, replace_df_with_grp:bool = False ,
+                    show_fig:bool = False, **args):
         """plots data as candlestick format. 
 
         Args:
@@ -157,6 +157,9 @@ class Market_Plotter():
                     slider:bool use slider in x axis or not
                     size: size of figure 
         """        
+        self.update_params
+        dataframe = self.df.copy()
+        
         if plot_by_grp:
             
             
@@ -181,7 +184,7 @@ class Market_Plotter():
             str_temp = str(grp_by)
             
             # if the name of df columns are not standard they will be specified here
-            if "x" in args.keys() and "open" in args.keys() and "close" in args.keys() and "low" in args.keys() and "high" in args.keys():
+            if all(True if _ in args.keys() else False for _ in ["x","open","close","low"]):
                 candlestick_data = self.df2candlestick( grp, OPEN = args["open"], CLOSE = args["close"],
                                                         LOW = args["low"], HIGH = args["high"],
                                                         name = self.symbol+" candlestick data"
@@ -190,35 +193,34 @@ class Market_Plotter():
             else:
                 candlestick_data = self.df2candlestick( grp, name = self.symbol+" candlestick data" )
                 
-        
         else: 
             # plot full data if plot_by_grp is False
             candlestick_data = self.df2candlestick( dataframe , name = self.symbol+" candlestick data") 
             str_temp = ""
              
-        
-        
         fig = go.Figure(  data = [candlestick_data] )
         
         # add titles and drag modes
-        fig.update_layout(title = self.symbol+'  ' + str_temp,
-                          yaxis_title = self.symbol, dragmode = "pan",  
-                          margin=dict(l=15, r=10, t=35, b=12) )
+        slider = args.get("slider",False)
+        fig_size = args.get("fig_size", [1100,600] )
         
+        if type(slider) != bool: raise ValueError("slider param must be bool type.")
+        if type(args["fig_size"]) != list:raise ValueError(" 'fig_size' must be a 2 element list")
         
-        if "slider" in args.keys(): # add slider in x axis or not
-            if type(args["slider"]) == bool:
-                fig.update_layout(xaxis_rangeslider_visible = args["slider"] )
-            else: raise Exception("slider param can be bool")
+        fig.update_layout(title = f"{self.symbol}|{self.interval}, date: {str_temp}",
+                          yaxis_title = self.symbol,
+                          xaxis_rangeslider_visible = slider,
+                          width = fig_size[0], height = fig_size[1],
+                          dragmode = "pan", margin=dict(l=15, r=10, t=35, b=12))
         
+        if replace_df_with_grp: 
+            self.market_obj.market_df = grp.copy()
+            self.update_params
+            
+        if show_fig: fig.show()
         
-        if "fig_size" in args.keys(): # changes fig size
-            if type(args["fig_size"]) == list:
-                fig.update_layout( width = args["fig_size"][0], height = args["fig_size"][1] )
-            else : raise Exception(" 'fig_size' must be a 2 element list")
-                        
         try: return fig, grp
-        except: return fig
+        except: return fig, None
     
     
     
@@ -430,21 +432,16 @@ class Market_Plotter():
         fig = go.Figure()
         
         # add titles and drag modes
-        fig.update_layout(
+        slider = kwargs.get("slider",False)
+        fig_size = kwargs.get("fig_size", [1100,600] )
+        
+        if type(slider) != bool: raise Exception("slider param can be bool")
+        if type(kwargs["fig_size"]) != list:raise Exception(" 'fig_size' must be a 2 element list")
+        
+        fig.update_layout(xaxis_rangeslider_visible = slider,
+                          width = fig_size[0], height = fig_size[1],
                           dragmode = "pan",  
-                          margin=dict(l=15, r=10, t=35, b=12)
-                         )
-        
-        if "slider" in kwargs.keys(): # add slider in x axis or not
-            if type(kwargs["slider"]) == bool:
-                fig.update_layout(xaxis_rangeslider_visible = kwargs["slider"] )
-            else: raise Exception("slider param can be bool")
-        
-        
-        if "fig_size" in kwargs.keys(): # changes fig size
-            if type(kwargs["fig_size"]) == list:
-                fig.update_layout( width = kwargs["fig_size"][0], height = kwargs["fig_size"][1] )
-            else : raise Exception(" 'fig_size' must be a 2 element list")
+                          margin=dict(l=15, r=10, t=35, b=12))
             
         return fig
     
@@ -452,7 +449,7 @@ class Market_Plotter():
     
     def draw_trend_highlight(self, column:str = "MA_trend", dataframe:pd.DataFrame = None
                    , up_trend_color:str = "blue", down_trend_color:str = "red"
-                   , side_trend_color:str = "yellow"):
+                   , side_trend_color:str = "yellow", **kwargs):
         """visualizes the evaluated trend with highlighted candles.
 
         Args:
@@ -465,7 +462,8 @@ class Market_Plotter():
             side_trend_color (str, optional): color of side_trend candles. Defaults to "yellow".
         """        
         self.update_params
-        fig = self.empty_figure(fig_size = [1300,600], slider = False)
+        fig = self.empty_figure(fig_size = kwargs.get("fig_size",[1100,600]),
+                                slider = kwargs.get("slider",False))        
         
         try: df_ = dataframe.copy()
         except: df_ = self.df.copy()
@@ -480,20 +478,15 @@ class Market_Plotter():
             for i,row in grp.iterrows():
                 self.highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
                 
-        if fig.layout.title.text != None: fig.update_layout(
-                                                            title = f"""{self.symbol} | {self.interval},
-                                                            trend evaluated with: {column}""" 
-                                                           )
-        
-        else : fig.update_layout(title = f"trend evaluated with : {column}" )
+        fig.update_layout( title = f"{self.symbol} | {self.interval}, trend evaluated with: {column}")
         
         return fig
         
         
         
     
-    def plot_high_lows(self, fig:go.Figure, min_color:str = "red", max_color:str = "green" ,
-                                R:int = 400, y_scale:float = 0.1):
+    def plot_high_lows(self, min_color:str = "red", max_color:str = "green" ,
+                                R:int = 400, y_scale:float = 0.1, **kwargs):
         """adds circle shapes for highs and lows for visualizing.
 
         Args:
@@ -508,6 +501,12 @@ class Market_Plotter():
         """        
         
         self.update_params
+
+        fig,_ = self.plot_market(
+                                 plot_by_grp = False,
+                                 fig_size = kwargs.get("fig_size",[1100,600]),
+                                 slider = kwargs.get("slider",False)
+                                )
         
         if self.highs_df == None or self.lows_df == None : 
             raise ValueError("""you didn't calculate highs and lows yet!
@@ -519,7 +518,7 @@ class Market_Plotter():
         for high_coord in self.highs_df:
             self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
    
-        
+        return fig
         
     
         
