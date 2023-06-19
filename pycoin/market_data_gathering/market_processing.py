@@ -8,19 +8,156 @@ import datetime as dt
 from typing import List
 from ta.trend import MACD
 from scipy.signal import argrelextrema
+import time
+import kucoin.client as kc
 
 
-class market_processing(get_market_plots):
+class Market_processing(get_market_plots):
     
-    def __init__(self, dataframe:pd.DataFrame) -> None:
-        self.df = dataframe
+    def __init__(self, symbol, interval:str = "4hour") -> None:
+        ''' Args:
+        interval (str, optional): Type of candlestick patterns: "1min", "3min", "5min", "15min", "30min",
+        "1hour", "2hour", "4hour" , "6hour", "8hour", "12hour", "1day", "1week"
+        symbol(str): market symbol in format of "BTC-USDT" '''
+        
+        self.symbol = symbol
+        self.market = kc.Market(url = 'https://api.kucoin.com')
+        
+        if interval in ["1min", "3min", "5min", "15min", "30min","1hour", "2hour",
+                    "4hour" , "6hour", "8hour", "12hour", "1day", "1week"]: 
+            self.interval = interval
+        else: raise ValueError("entered interval value not found !")
+        
+        self.df = None
         self.highs_df = None
         self.lows_df = None
         self.pivots = {"highs": {}, "lows": {}}
         
         
+        
+    def get_kline_as_df(self , reverse_df:bool = False, end_timestamp:int = None , 
+                        verbose:bool = True, start_timestamp:int = dt.datetime(2017,1,1).timestamp().__int__() ) -> pd.DataFrame:
+        """requests kucoin api and gathers kline (candlestick) data. returns output as pd.dataframe .
+
+        Args:
+            interval (str, optional): Type of candlestick patterns: "1min", "3min", "5min", "15min", "30min",
+            "1hour", "2hour", "4hour" , "6hour", "8hour", "12hour", "1day", "1week".
+            Defaults to "15min".
+            reverse_df (bool, optional): reverse output dataframe or not. Defaults to False.
+            end_timestamp (int, optional): final time data, if not specified gathers data till current time
+            . Defaults to None.
+            start_timestamp (int, optional): first time data, if not specified it will gather data until 
+            first price data at kucoin.
+
+        Returns:
+            pd.DataFrame: output candlestick data
+        """        
+        # Exception for interval
+
+            
+        
+        cols = ["timestamp",'open','close','high','low','volume','turnover']
+        df_temp = pd.DataFrame(columns = cols)
+        
+        if end_timestamp == None:
+            current_timestamp = int(self.market.get_server_timestamp()*1e-3) # current ts milisec to sec
+            ts_temp_end = current_timestamp
+        else: ts_temp_end = end_timestamp
+        
+        while 1 :
+            try:
+            # returns timestamp(newest date comes first), open, close, high, low, volume, turnover
+                ts_temp_last = ts_temp_end # saves last timestamp
+                candles_temp = self.market.get_kline(self.symbol, self.interval , startAt = start_timestamp, 
+                                                     endAt = ts_temp_end ) # read kline data from kucoin api
+                
+                ts_temp_end = int(candles_temp[-1][0]) # get last timestamp of each bunch of data
+
+                candle_df_temp = pd.DataFrame(candles_temp, columns = cols) # convert current data bunch to df
+                df_temp = pd.concat( [df_temp,candle_df_temp], axis=0, ignore_index = True ) # updating final df
+            
+                if verbose:
+                    print("\n\nfirst datetime is: ",
+                        self.__ts2dt( int(df_temp.iloc[0].timestamp) ) ,
+                        "\nlast datetime till now is: ",
+                        self.__ts2dt( int(df_temp.iloc[-1].timestamp) )
+                         ) 
+
+            except :      
+                 # check if we got the data of new timestamp else exits loop
+                if ts_temp_end == ts_temp_last: break
+                elif ts_temp_end != ts_temp_last: 
+                    ts_temp_end = int(candles_temp[-1][0])
+                    time.sleep(10)
+                    continue
+                
+        df_temp["timestamp"] = df_temp.timestamp.astype("Int64")
+        df_temp[df_temp.columns.to_list()[1:]] = df_temp[df_temp.columns.to_list()[1:]].astype("Float64") 
+        df_temp["datetime"] = pd.to_datetime(df_temp["timestamp"],unit = 's')
+        df_temp = df_temp[["timestamp","datetime",'open','close','high','low','volume','turnover']]
+        
+        # reverses dataframe if specified
+        if reverse_df: df_temp = df_temp.reindex(index= df_temp.index[::-1]).reset_index(drop = True)
+        self.df = df_temp 
+        return df_temp
+        
+
+
+    def load_kline_data(self , file_name:str, reverse:bool = False) -> pd.DataFrame :
+            """reads kline date in .csv or .xlsx format.
+
+            Args:
+                file_name (str): name of file in current dir
+            return:
+                output dataframe
+            """        
+            
+            if "csv" in file_name: df = pd.read_csv(file_name)
+            elif "xlsx" in file_name : df = pd.read_excel(file_name)
+            else : "file format must be .csv or .xlsx"
+
+            # converting format of data columns
+            df["timestamp"] = df.timestamp.astype("Int64")
+            df["datetime"] = pd.to_datetime( df["timestamp"], unit = 's')
+            df = df[["timestamp","datetime",'open','close','high','low','volume','turnover']]
+            df[ df.columns.to_list()[2:] ] = df[ df.columns.to_list()[2:] ].astype("Float64")
+            
+            if reverse: df = df.reindex(index= df.index[::-1])
+            df.reset_index(drop = True, inplace = True)
+            
+            self.df = df
+            return df
+        
+        
+    def group_klines(self, df:pd.DataFrame, *grp_bys):
+        """groups dataframe by ("year", "month", "day") tuple arg if specified.
+
+        Args:
+            df (pd.DataFrame): input df
+
+        Returns:
+            _type_: group object
+            
+        example:
+            >>> self.group_klines(df , ("year" , "month" , "day")) --> groups df by year, month, day
+        """      
+        by = grp_bys[0]
+          
+        grps = []
+        
+        
+        if "year" in by : grps.append(df["datetime"].dt.year) 
+        if "month" in by : grps.append(df["datetime"].dt.month)
+        if "day" in by : grps.append(df["datetime"].dt.day)
+        
+        if grps == []: 
+            raise Exception("at least one date parameter(year or month or day must be specified)")
+        
+        return df.groupby(grps)
+        
+        
     def get_market_high_lows(self, candle_range:int = 100, mode:str = "clip", 
-                             high_col:str = "high", low_col:str = "low", 
+                             high_col:str = "high", low_col:str = "low", datetime_col:str = "datetime",
                              min_time_dist:list = dt.timedelta(seconds = 24000),fill_between_two_same:bool = True,
                              remove_under_min_time_dist:bool = True):
         """this function evaluates input market highs, lows. and returns their index. 
@@ -55,99 +192,30 @@ class market_processing(get_market_plots):
         min_idx = min_idx.tolist()
                 
         # a helper func that fills between two immediate pivots
-        def fill_between_pivots( max_idx:list, min_idx:list , df_:pd.DataFrame, high_col:str = high_col,
-                                low_col:str = low_col):
-            
-            high_df = df_.iloc[max_idx][high_col]
-            low_df = df_.iloc[min_idx][low_col]
-            
-            # concatnating mins and max and taking isna to check is we have two immediate pivots
-            isnan = pd.concat([high_df, low_df], axis = 1, sort = True).isna()
-            isnum = isnan == False
-            
-            min_idx_ = min_idx.copy()
-            j = 0
-            
-            # adding new min between two immediate max
-            for i, val in isnan.iterrows(): 
-                if i == max_idx[-1]: break
-                # if we have two immediate highs and two coresspanding nan in lows
-                if isnum[high_col].iloc[[j, j+1]].all() and isnan[low_col].iloc[[j, j+1]].all(): 
-                    ind = max_idx.index(i)
-                    new_min = df_.iloc[max_idx[ind]:max_idx[ind+1]][low_col].min() # finding new min
-                    # selecting the one that is in range of two maxs
-                    new_min_ind = [ind_ for ind_ in df_[df_[low_col] == new_min].index 
-                                   if ind_ in range(max_idx[ind],max_idx[ind+1])][0]
-                    
-                    min_idx_.append(new_min_ind)
-                    min_idx_.sort()
-                j+=1
-                
-            ############ doing the same for lows ######
-            max_idx_ = max_idx.copy()
-            j = 0
-            
-            # adding new max between two immediate min
-            for i, val in isnan.iterrows():
-                
-                if i == min_idx[-1]: break
-                # if we have two immediate lows and two coresspanding nan in highs
-                if isnum[low_col].iloc[[j, j+1]].all() and isnan[high_col].iloc[[j, j+1]].all():
-                    ind = min_idx.index(i)
-                    new_max = df_.iloc[min_idx[ind]: min_idx[ind+1]][high_col].max() # finding new max
-                    # selecting the one that is in range of two mins
-                    new_max_ind = [ind_ for ind_ in df_[df_[high_col] == new_max].index  
-                                   if ind_ in range(min_idx[ind], min_idx[ind+1]) ][0]
-                    
-                    max_idx_.append(new_max_ind)
-                    max_idx_.sort()
-                j+=1
-                
-            return max_idx_, min_idx_
+        from .trend_filters import fill_between_pivots
                 
         # a helper func that removes the pivot that very close in time index to next/previous pivot
-        def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
-                                      datetime_col:str = "datetime",high_col = high_col,
-                                      low_col = low_col, min_delta_t:dt.timedelta = min_time_dist ):
-            
-            highs_df = df_.iloc[max_idx][[datetime_col,high_col]].drop_duplicates()
-            lows_df = df_.iloc[min_idx][[datetime_col,low_col]].drop_duplicates()
-                     
-            # removing highs closer than specified time  
-            while highs_df.diff(1)[datetime_col].min() < min_delta_t: # doing for maxs
-                time_diff = highs_df.diff(1)[datetime_col]
-                to_remove_pair_ind = highs_df[time_diff.min() == time_diff].index[0]
-                ind = max_idx.index(to_remove_pair_ind)
-                if ind == len(highs_df)-1 :break
-                to_remove_ind = highs_df[highs_df.iloc[ind-1:ind+1][high_col].min() == highs_df[high_col]].index[0]
-                highs_df.drop(to_remove_ind, axis = 0, inplace = True)
-            
-            # removing lows closer than specified time 
-            while lows_df.diff(1)[datetime_col].min() < min_delta_t: # doing for mins
-                try:
-                    time_diff = lows_df.diff(1)[datetime_col]
-                    to_remove_pair_ind = lows_df[time_diff.min() == time_diff].index[0]
-                    ind = min_idx.index(to_remove_pair_ind)
-                    if ind == len(lows_df)-1 :break
-                    to_remove_ind = lows_df[lows_df.iloc[ind-1:ind+1][low_col].max() == lows_df[low_col]].index[0]
-                    lows_df.drop(to_remove_ind, axis = 0, inplace = True)
-                
-                except IndexError : break
-                
-            return highs_df.index.to_list(), lows_df.index.to_list()
+        from .trend_filters import remove_less_than_min_time
                 
         ### filtering and filling between high and lows with added functions       
-        if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_)
-        if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
-        if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_)
-        if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_)
-
+        if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_
+                                                                                    ,datetime_col,high_col,
+                                                                                    low_col, min_time_dist)
+        
+        if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_, high_col,
+                                                                         low_col)
+        
+        if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_
+                                                                                    ,datetime_col,high_col,
+                                                                                    low_col, min_time_dist)
+        
+        if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_, high_col,
+                                                                         low_col)
+        max_idx.sort()
+        min_idx.sort()
 
         self.highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates().values.tolist()
         self.lows_df = df_.iloc[min_idx][["datetime",low_col]].drop_duplicates().values.tolist()
-        
-        max_idx.sort()
-        min_idx.sort()
         
         self.pivots["highs"]["idx"] = max_idx
         self.pivots["highs"]["column"] = high_col

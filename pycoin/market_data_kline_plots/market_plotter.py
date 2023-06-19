@@ -13,10 +13,8 @@ import numpy as np
 
 class get_market_plots: 
     
-    def __init__(self, symbol) -> None:
-        self.symbol = symbol
-        self.market = kc.Market(url = 'https://api.kucoin.com')
-        
+    def __init__(self) -> None:
+        pass
         
     def __get_end_time(self , start_time:dt.datetime, delta_days:int = 0, delta_seconds:int = 0, **args) -> dt.datetime:
         """ this method returns new time = start_time + delta_time gets ((delta_days , delta_seconds , 
@@ -65,133 +63,7 @@ class get_market_plots:
         """        
         return dt.datetime.fromtimestamp(ts)
     
-    
-    
-    def get_kline_as_df(self, interval:str ="15min" , reverse_df:bool = False, end_timestamp:int = None , 
-                        verbose:bool = True, start_timestamp:int = dt.datetime(2017,1,1).timestamp().__int__() ) -> pd.DataFrame:
-        """requests kucoin api and gathers kline (candlestick) data. returns output as pd.dataframe .
 
-        Args:
-            interval (str, optional): Type of candlestick patterns: "1min", "3min", "5min", "15min", "30min",
-            "1hour", "2hour", "4hour" , "6hour", "8hour", "12hour", "1day", "1week".
-            Defaults to "15min".
-            reverse_df (bool, optional): reverse output dataframe or not. Defaults to False.
-            end_timestamp (int, optional): final time data, if not specified gathers data till current time
-            . Defaults to None.
-            start_timestamp (int, optional): first time data, if not specified it will gather data until 
-            first price data at kucoin.
-
-        Returns:
-            pd.DataFrame: output candlestick data
-        """        
-        # Exception for interval
-        if interval not in ["1min", "3min", "5min", "15min", "30min","1hour", "2hour",
-                            "4hour" , "6hour", "8hour", "12hour", "1day", "1week"]: 
-            raise ValueError("entered interval value not found !")
-            
-        
-        cols = ["timestamp",'open','close','high','low','volume','turnover']
-        df_temp = pd.DataFrame(columns = cols)
-        
-        if end_timestamp == None:
-            current_timestamp = int(self.market.get_server_timestamp()*1e-3) # current ts milisec to sec
-            ts_temp_end = current_timestamp
-        else: ts_temp_end = end_timestamp
-        
-        while 1 :
-            try:
-            # returns timestamp(newest date comes first), open, close, high, low, volume, turnover
-                ts_temp_last = ts_temp_end # saves last timestamp
-                candles_temp = self.market.get_kline(self.symbol, interval , startAt = start_timestamp, 
-                                                     endAt = ts_temp_end ) # read kline data from kucoin api
-                
-                ts_temp_end = int(candles_temp[-1][0]) # get last timestamp of each bunch of data
-
-                candle_df_temp = pd.DataFrame(candles_temp, columns = cols) # convert current data bunch to df
-                df_temp = pd.concat( [df_temp,candle_df_temp], axis=0, ignore_index = True ) # updating final df
-            
-                if verbose:
-                    print("\n\nfirst datetime is: ",
-                        self.__ts2dt( int(df_temp.iloc[0].timestamp) ) ,
-                        "\nlast datetime till now is: ",
-                        self.__ts2dt( int(df_temp.iloc[-1].timestamp) )
-                         ) 
-
-            except :      
-                 # check if we got the data of new timestamp else exits loop
-                if ts_temp_end == ts_temp_last: break
-                elif ts_temp_end != ts_temp_last: 
-                    ts_temp_end = int(candles_temp[-1][0])
-                    time.sleep(10)
-                    continue
-                
-                
-                    
-        df_temp["timestamp"] = df_temp.timestamp.astype("Int64")
-        df_temp[df_temp.columns.to_list()[1:]] = df_temp[df_temp.columns.to_list()[1:]].astype("Float64") 
-        df_temp["datetime"] = pd.to_datetime(df_temp["timestamp"],unit = 's')
-        df_temp = df_temp[["timestamp","datetime",'open','close','high','low','volume','turnover']]
-        
-        # reverses dataframe if specified
-        if reverse_df: df_temp = df_temp.reindex(index= df_temp.index[::-1]).reset_index(drop = True) 
-        return df_temp
-    
-    
-    
-    
-    def load_kline_data(self , file_name:str, reverse:bool = False) -> pd.DataFrame :
-        """reads kline date in .csv or .xlsx format.
-
-        Args:
-            file_name (str): name of file in current dir
-        return:
-            output dataframe
-        """        
-        
-        if "csv" in file_name: df = pd.read_csv(file_name)
-        elif "xlsx" in file_name : df = pd.read_excel(file_name)
-        else : "file format must be .csv or .xlsx"
-
-        # converting format of data columns
-        df["timestamp"] = df.timestamp.astype("Int64")
-        df["datetime"] = pd.to_datetime( df["timestamp"], unit = 's')
-        df = df[["timestamp","datetime",'open','close','high','low','volume','turnover']]
-        df[ df.columns.to_list()[2:] ] = df[ df.columns.to_list()[2:] ].astype("Float64")
-        
-        if reverse: df = df.reindex(index= df.index[::-1])
-        df.reset_index(drop = True, inplace = True)
-        
-        return df
-    
-
-    
-    def group_klines(self, df:pd.DataFrame, *grp_bys):
-        """groups dataframe by ("year", "month", "day") tuple arg if specified.
-
-        Args:
-            df (pd.DataFrame): input df
-
-        Returns:
-            _type_: group object
-            
-        example:
-            self.group_klines(df , ("year" , "month" , "day")) --> groups df by year, month, day
-        """      
-        by = grp_bys[0]
-          
-        grps = []
-        
-        
-        if "year" in by : grps.append(df["datetime"].dt.year) 
-        if "month" in by : grps.append(df["datetime"].dt.month)
-        if "day" in by : grps.append(df["datetime"].dt.day)
-        
-        if grps == []: 
-            raise Exception("at least one date parameter(year or month or day must be specified)")
-        
-        return df.groupby(grps)
-    
-    
     
     
     def df2candlestick(self , df:pd.DataFrame, X:str = "datetime",OPEN:str = 'open', CLOSE:str = 'close', HIGH:str='high',
@@ -232,6 +104,32 @@ class get_market_plots:
         return candle_data
         
         
+        
+    def __group_klines(self, df:pd.DataFrame, *grp_bys):
+        """groups dataframe by ("year", "month", "day") tuple arg if specified.
+
+        Args:
+            df (pd.DataFrame): input df
+
+        Returns:
+            _type_: group object
+            
+        example:
+            >>> self.group_klines(df , ("year" , "month" , "day")) --> groups df by year, month, day
+        """      
+        by = grp_bys[0]
+          
+        grps = []
+        
+        
+        if "year" in by : grps.append(df["datetime"].dt.year) 
+        if "month" in by : grps.append(df["datetime"].dt.month)
+        if "day" in by : grps.append(df["datetime"].dt.day)
+        
+        if grps == []: 
+            raise Exception("at least one date parameter(year or month or day must be specified)")
+        
+        return df.groupby(grps)
     
     
     
@@ -261,7 +159,7 @@ class get_market_plots:
                 
             
            
-            grps = self.group_klines(dataframe , list(grp_by.keys()) ) # group data by entered dates
+            grps = self.__group_klines(dataframe , list(grp_by.keys()) ) # group data by entered dates
             
             if len( list(grp_by.keys()) ) == 1 : grp = grps.get_group( list(grp_by.values())[0] ) 
             else: grp = grps.get_group( tuple(grp_by.values()) )      # get specified grp of data 
