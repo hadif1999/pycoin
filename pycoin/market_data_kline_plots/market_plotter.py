@@ -11,11 +11,24 @@ from typing import List
 import numpy as np
 
 
-class get_market_plots: 
+
+class Market_Plotter(): 
     
-    def __init__(self) -> None:
-        pass
+    def __init__(self, process_obj) -> None:
+        self.market_obj = process_obj
         
+        self.update_params
+    
+    @property
+    def update_params(self):
+        self.symbol = self.market_obj.symbol
+        self.df = self.market_obj.market_df
+        self.interval = self.market_obj.interval
+        self.highs_df = self.market_obj.highs_df
+        self.lows_df = self.market_obj.lows_df
+        
+    
+    
     def __get_end_time(self , start_time:dt.datetime, delta_days:int = 0, delta_seconds:int = 0, **args) -> dt.datetime:
         """ this method returns new time = start_time + delta_time gets ((delta_days , delta_seconds , 
         delta_mins , delta_hours))
@@ -39,7 +52,7 @@ class get_market_plots:
     
     
     
-    def __dt2ts( self, datetime:dt.datetime ) -> int:
+    def dt2ts( self, datetime:dt.datetime ) -> int:
         """ converts datetime to timestamp data in int 
 
         Args:
@@ -52,7 +65,7 @@ class get_market_plots:
     
     
     
-    def __ts2dt(self, ts:int )-> dt.datetime:
+    def ts2dt(self, ts:int )-> dt.datetime:
         """converts timestamp to datetime format
 
         Args:
@@ -434,6 +447,86 @@ class get_market_plots:
             else : raise Exception(" 'fig_size' must be a 2 element list")
             
         return fig
+    
+    
+    
+    def draw_trend_highlight(self, column:str = "MA_trend", dataframe:pd.DataFrame = None
+                   , up_trend_color:str = "blue", down_trend_color:str = "red"
+                   , side_trend_color:str = "yellow"):
+        """visualizes the evaluated trend with highlighted candles.
+
+        Args:
+            fig (go.Figure): add trend plot to this fig.
+            column (str, optional): name of the trend col you want to plot. Defaults to "MA_trend".
+            dataframe (pd.DataFrame, optional): you can give a new df else it will use self.df.
+            Defaults to None.
+            up_trend_color (str, optional): color of up_trend candles. Defaults to "blue".
+            down_trend_color (str, optional): color of down_trend candles. Defaults to "red".
+            side_trend_color (str, optional): color of side_trend candles. Defaults to "yellow".
+        """        
+        self.update_params
+        fig = self.empty_figure(fig_size = [1300,600], slider = False)
+        
+        try: df_ = dataframe.copy()
+        except: df_ = self.df.copy()
+            
+        trend_grps = df_.copy().groupby(column, sort = True)
+        
+        colors = [down_trend_color , side_trend_color , up_trend_color]
+        trend_names = list(trend_grps.groups.keys())
+        colors_dict = {key:color for key,color in zip(trend_names,colors)}
+          
+        for name,grp in trend_grps :
+            for i,row in grp.iterrows():
+                self.highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
+                
+        if fig.layout.title.text != None: fig.update_layout(
+                                                            title = f"""{self.symbol} | {self.interval},
+                                                            trend evaluated with: {column}""" 
+                                                           )
+        
+        else : fig.update_layout(title = f"trend evaluated with : {column}" )
+        
+        return fig
+        
+        
+        
+    
+    def plot_high_lows(self, fig:go.Figure, min_color:str = "red", max_color:str = "green" ,
+                                R:int = 400, y_scale:float = 0.1):
+        """adds circle shapes for highs and lows for visualizing.
+
+        Args:
+            fig (go.Figure): adds shapes to this fig
+            min_color (str, optional): color of lows circle. Defaults to "red".
+            max_color (str, optional): color of highs circle. Defaults to "green".
+            R (int, optional): radius of circle. Defaults to 400.
+            y_scale (float, optional): scales the y coord of circle(price) if needed. Defaults to 0.1.
+
+        Raises:
+            ValueError: _description_
+        """        
+        
+        self.update_params
+        
+        if self.highs_df == None or self.lows_df == None : 
+            raise ValueError("""you didn't calculate highs and lows yet!
+                                do this by running obj.get_market_high_lows method.""")
+        
+        for low_coord in self.lows_df:
+            self.draw_circle(fig = fig, center = low_coord, R = R , fillcolor = min_color , y_scale = y_scale )
+            
+        for high_coord in self.highs_df:
+            self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
+   
+        
+        
+    
+        
+    
+    
+    
+
                    
         
         

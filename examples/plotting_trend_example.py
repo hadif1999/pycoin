@@ -3,72 +3,78 @@
 
 
 #%% import market get data lib
-from pycoin.market_data_kline_plots.market_plotter import get_market_plots
+import os
+os.chdir("..")
+os.getcwd()
+from pycoin.market_data_gathering.market_processing import Market_Processing
+from pycoin.market_data_kline_plots.market_plotter import Market_Plotter
 
 #%% load data
-market_plot = get_market_plots(symbol = 'BTC-USDT')
-btc_15min_df = market_plot.load_kline_data('BTC-USDT|15min.csv', reverse = True)
+market_analysis = Market_Processing("BTC-USDT", interval = "4hour")
+
+import datetime as dt
+
+btcusd_h4_df = market_analysis.download_kline_as_df(reverse_df = True, 
+               start_timestamp= dt.datetime(2017, 1, 1).timestamp().__int__(), inplace= True
+               ) 
+
+market_analysis.save_market()
+
+# btc_4h_df = market_analysis.load_kline_data('BTC-USDT|15min.csv', reverse = True)
 
 # current value of symbol
 # val_now = market.tick
 
 #%% plot interactive candlestick data and pivots
 
-btc_15m_grp_fig, btc_grp_df = market_plot.plot_candlestick_plotly(btc_15min_df, 
-                                                                  plot_by_grp = True, year = 2022, month = 5,
-                                                                  fig_size = [1100,600],
-                                                                  slider = False)
+# ploting just 1 month for better visualization 
+plots = Market_Plotter(market_analysis)
+btc_grp_fig = plots.plot_candlestick_plotly( btcusd_h4_df, 
+                                                         plot_by_grp = False, year = 2021, month = 2,
+                                                         fig_size = [1100,600],
+                                                         slider = False)
 
 # define interactive options to use 
 config_ = {'modeBarButtonsToAdd':['drawline','drawcircle','drawrect','eraseshape']}
-
-
-#%% market processing lib
-
-from pycoin.market_data_gathering.market_processing import market_processing
-
-analysis = market_processing(btc_grp_df)
+btc_grp_fig.show(config = config_)
 
 #%% plot pivots min and max
 import numpy as np
 import datetime as dt
 
-maxs, mins = analysis.get_market_high_lows( 50 , min_time_dist = dt.timedelta(hours=13)) 
+maxs, mins = market_analysis.get_market_high_lows( 100 , 
+                                                  min_time_dist = dt.timedelta(hours=13)) 
 
-analysis.plot_high_lows(btc_15m_grp_fig, R = 400, y_scale = 0.2)
+plots.plot_high_lows(btc_grp_fig, R = 10000, y_scale = 0.1)
 
 # show added min and max pivots
-btc_15m_grp_fig.show(config = config_)
+btc_grp_fig.show(config = config_)
+
+plots.remove_all_shapes( btc_grp_fig )
 
 # market_plot.remove_all_shapes(btc_15m_grp_fig)
 
 #%% eval trend with high lows
 
-df_high_low_trend = analysis.eval_trend_with_high_lows()
-analysis.draw_trend_highlight(btc_15m_grp_fig, column = "high_low_trend")
-
-btc_15m_grp_fig.show(config = config_)
+df_high_low_trend = market_analysis.eval_trend_with_high_lows()
+plots.draw_trend_highlight(column = "high_low_trend")
 
 # %% evaluating market trend with MA
 
-df_trend = analysis.eval_trend_with_MAs(drop_MA_cols = True , windows=[50, 200])
+df_trend = market_analysis.eval_trend_with_MAs(drop_MA_cols = True , windows=[50, 200])
 
 # %% plot trend with MAs
 
-MA_fig = analysis.empty_figure(fig_size = [1300,600], slider = False)
-analysis.draw_trend_highlight(MA_fig, column = "MA_trend")
 
-MA_fig.show(config = config_)
+plots.draw_trend_highlight(column = "MA_trend")
+
 
 # %% using MACD to find trend of market
 
-MACD_trend = analysis.eval_trend_with_MACD(drop_MACD_col = True )
-MACD_trend_fig = market_plot.empty_figure(fig_size = [1300,600], slider = False)
+MACD_trend = market_analysis.eval_trend_with_MACD(drop_MACD_col = True )
+MACD_trend_fig = plots.empty_figure(fig_size = [1300,600], slider = False)
 
-analysis.draw_trend_highlight(MACD_trend_fig , column = "MACD_trend")
-
-MACD_trend_fig.show(config = config_)
-
+plots.draw_trend_highlight( column = "MACD_trend")
 
  # %%                                                       
 

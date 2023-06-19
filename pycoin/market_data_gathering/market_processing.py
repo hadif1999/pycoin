@@ -1,5 +1,5 @@
 import pandas as pd
-from ..market_data_kline_plots.market_plotter import get_market_plots
+from ..market_data_kline_plots.market_plotter import Market_Plotter
 import plotly.graph_objects as go
 import sys
 sys.setrecursionlimit(10000)
@@ -12,9 +12,15 @@ import time
 import kucoin.client as kc
 
 
-class Market_processing(get_market_plots):
+class Market_Processing(Market_Plotter):
     
-    def __init__(self, symbol, interval:str = "4hour") -> None:
+    intervals = {
+                 "1min":1*60, "3min":3*60, "5min":5*60, "15min":15*60, "30min":30*60,
+                 "1hour":60*60, "2hour":2*60*60,"4hour":4*60*60 ,"6hour":6*60*60,
+                 "8hour":8*60*60, "12hour":12*60*60, "1day":24*60*60,"1week":7*24*60*60
+                }
+    
+    def __init__(self, symbol = "BTC-USDT", interval:str = "4hour") -> None:
         ''' Args:
         interval (str, optional): Type of candlestick patterns: "1min", "3min", "5min", "15min", "30min",
         "1hour", "2hour", "4hour" , "6hour", "8hour", "12hour", "1day", "1week"
@@ -23,8 +29,7 @@ class Market_processing(get_market_plots):
         self.symbol = symbol
         self.market = kc.Market(url = 'https://api.kucoin.com')
         
-        if interval in ["1min", "3min", "5min", "15min", "30min","1hour", "2hour",
-                    "4hour" , "6hour", "8hour", "12hour", "1day", "1week"]: 
+        if interval in self.intervals.keys(): 
             self.interval = interval
         else: raise ValueError("entered interval value not found !")
         
@@ -34,9 +39,10 @@ class Market_processing(get_market_plots):
         self.pivots = {"highs": {}, "lows": {}}
         
         
-        
-    def get_kline_as_df(self , reverse_df:bool = False, end_timestamp:int = None , 
-                        verbose:bool = True, start_timestamp:int = dt.datetime(2017,1,1).timestamp().__int__() ) -> pd.DataFrame:
+    def download_kline_as_df(self , reverse_df:bool = False, end_timestamp:int = None , 
+                        verbose:bool = True, 
+                        start_timestamp:int = dt.datetime(2018,1,1).timestamp().__int__(),
+                        inplace:bool = True) -> pd.DataFrame:
         """requests kucoin api and gathers kline (candlestick) data. returns output as pd.dataframe .
 
         Args:
@@ -54,8 +60,6 @@ class Market_processing(get_market_plots):
         """        
         # Exception for interval
 
-            
-        
         cols = ["timestamp",'open','close','high','low','volume','turnover']
         df_temp = pd.DataFrame(columns = cols)
         
@@ -63,24 +67,25 @@ class Market_processing(get_market_plots):
             current_timestamp = int(self.market.get_server_timestamp()*1e-3) # current ts milisec to sec
             ts_temp_end = current_timestamp
         else: ts_temp_end = end_timestamp
-        
+                
         while 1 :
             try:
             # returns timestamp(newest date comes first), open, close, high, low, volume, turnover
                 ts_temp_last = ts_temp_end # saves last timestamp
-                candles_temp = self.market.get_kline(self.symbol, self.interval , startAt = start_timestamp, 
+                candles_temp = self.market.get_kline(symbol = self.symbol, kline_type= self.interval ,
+                                                     startAt = start_timestamp, 
                                                      endAt = ts_temp_end ) # read kline data from kucoin api
                 
                 ts_temp_end = int(candles_temp[-1][0]) # get last timestamp of each bunch of data
 
                 candle_df_temp = pd.DataFrame(candles_temp, columns = cols) # convert current data bunch to df
                 df_temp = pd.concat( [df_temp,candle_df_temp], axis=0, ignore_index = True ) # updating final df
-            
+                
                 if verbose:
                     print("\n\nfirst datetime is: ",
-                        self.__ts2dt( int(df_temp.iloc[0].timestamp) ) ,
+                        self.ts2dt( int(df_temp.iloc[0].timestamp) ) ,
                         "\nlast datetime till now is: ",
-                        self.__ts2dt( int(df_temp.iloc[-1].timestamp) )
+                        self.ts2dt( int(df_temp.iloc[-1].timestamp) )
                          ) 
 
             except :      
@@ -98,12 +103,13 @@ class Market_processing(get_market_plots):
         
         # reverses dataframe if specified
         if reverse_df: df_temp = df_temp.reindex(index= df_temp.index[::-1]).reset_index(drop = True)
-        self.df = df_temp 
+        if inplace: self.df = df_temp 
         return df_temp
         
 
 
-    def load_kline_data(self , file_name:str, reverse:bool = False) -> pd.DataFrame :
+    def load_kline_data(self , file_name:str, reverse:bool = False, 
+                        inplace:bool = True) -> pd.DataFrame :
             """reads kline date in .csv or .xlsx format.
 
             Args:
@@ -115,7 +121,6 @@ class Market_processing(get_market_plots):
             if "csv" in file_name: df = pd.read_csv(file_name)
             elif "xlsx" in file_name : df = pd.read_excel(file_name)
             else : "file format must be .csv or .xlsx"
-
             # converting format of data columns
             df["timestamp"] = df.timestamp.astype("Int64")
             df["datetime"] = pd.to_datetime( df["timestamp"], unit = 's')
@@ -125,8 +130,30 @@ class Market_processing(get_market_plots):
             if reverse: df = df.reindex(index= df.index[::-1])
             df.reset_index(drop = True, inplace = True)
             
-            self.df = df
+            if ((df["datetime"].iloc[0] - df["datetime"].iloc[1]).__abs__().total_seconds()
+                != self.intervals[self.interval]):
+                raise Exception(f"interval of your input dataframe is not {self.interval}")   
+            
+            if inplace: self.df = df
             return df
+        
+    def save_market(self, path:str = None, as_csv:bool = True):
+        if path == None: path = ""
+        if as_csv: self.df.to_csv(path + f"{self.symbol}|{self.interval}.csv")
+        else: self.df.to_excel(path + f"{self.symbol}|{self.interval}.xlsx")
+        print("done")
+    
+    @property    
+    def market_df(self):
+        return self.df
+        
+    @market_df.deleter
+    def market_df(self):
+        self.df = None
+        
+    @market_df.setter
+    def market_df(self, df:pd.DataFrame):
+        self.df = df
         
         
     def group_klines(self, df:pd.DataFrame, *grp_bys):
@@ -156,9 +183,11 @@ class Market_processing(get_market_plots):
         return df.groupby(grps)
         
         
-    def get_market_high_lows(self, candle_range:int = 100, mode:str = "clip", 
+    def get_market_high_lows(self, dataframe:pd.DataFrame = None, 
+                             candle_range:int = 100, mode:str = "clip", 
                              high_col:str = "high", low_col:str = "low", datetime_col:str = "datetime",
-                             min_time_dist:list = dt.timedelta(seconds = 24000),fill_between_two_same:bool = True,
+                             min_time_dist:list = dt.timedelta(seconds = 24000),
+                             fill_between_two_same:bool = True,
                              remove_under_min_time_dist:bool = True):
         """this function evaluates input market highs, lows. and returns their index. 
 
@@ -178,8 +207,8 @@ class Market_processing(get_market_plots):
             min_idx (list): indices of lows
             max_idx (list): indices of highs
         """        
-        
-        df_ = self.df.copy()
+        try: df_ = dataframe.copy()
+        except: df_ = self.df.copy()
                 
         # evaluating min and max from argrelextrema function which finds high and lows
         max_idx = argrelextrema(data = np.array(df_[high_col].values.tolist()), 
@@ -230,7 +259,8 @@ class Market_processing(get_market_plots):
     
     
     def eval_trend_with_high_lows(self, trend_col_name:str = "high_low_trend", inplace:bool = True,
-                                  high_trend_label:int = 1, low_trend_label:int = -1, side_trend_label:int = 0):
+                                  high_trend_label:int = 1, low_trend_label:int = -1,
+                                  side_trend_label:int = 0):
         """evaluates trend with high and lows evaluated with remove_less_than_min_time method.
 
         Args:
@@ -292,36 +322,9 @@ class Market_processing(get_market_plots):
             last_min_ind = min_ind
             
         if inplace : self.df = df_
-        return df_
+        return df_[trend_col_name]
             
-        
-    
-    def plot_high_lows(self, fig:go.Figure, min_color:str = "red", max_color:str = "green" ,
-                                R:int = 400, y_scale:float = 0.1):
-        """adds circle shapes for highs and lows for visualizing.
-
-        Args:
-            fig (go.Figure): adds shapes to this fig
-            min_color (str, optional): color of lows circle. Defaults to "red".
-            max_color (str, optional): color of highs circle. Defaults to "green".
-            R (int, optional): radius of circle. Defaults to 400.
-            y_scale (float, optional): scales the y coord of circle(price) if needed. Defaults to 0.1.
-
-        Raises:
-            ValueError: _description_
-        """        
-        
-        if self.highs_df == None or self.lows_df == None : 
-            raise ValueError("""you didn't calculate highs and lows yet!
-                                do this by running obj.get_market_high_lows method.""")
-        
-        for low_coord in self.lows_df:
-            super().draw_circle(fig = fig, center = low_coord, R = R , fillcolor = min_color , y_scale = y_scale )
             
-        for high_coord in self.highs_df:
-            super().draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
-   
-        
     @property
     def tick(self):
         """get market current value
@@ -353,7 +356,9 @@ class Market_processing(get_market_plots):
     
     
     def eval_trend_with_MAs(self,column:str = "close" ,windows:List = [50,200], drop_MA_cols:bool = False,
-                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, inplace:bool = True):
+                            up_trends_as = 1, down_trends_as = -1, side_trends_as = 0,
+                            inplace:bool = True,
+                            trend_col_name:str = "MA_trend"):
         """eval trend with moving averages (list of 2 window values (first lower second higher)must be inserted)
         
 
@@ -379,8 +384,8 @@ class Market_processing(get_market_plots):
         up_trends = df_with_MA.query(f"MA{str(windows[0])} > MA{str(windows[1])}").copy()
         down_trends = df_with_MA.query(f"MA{str(windows[0])} < MA{str(windows[1])}").copy()
         
-        up_trends["MA_trend"] = up_trends_as
-        down_trends["MA_trend"] = down_trends_as
+        up_trends[trend_col_name] = up_trends_as
+        down_trends[trend_col_name] = down_trends_as
         
         trends = pd.concat([up_trends, down_trends], axis = 0, ignore_index = False, sort = True)
         labeled_df = pd.merge(self.df, trends, how = "left", sort = True).fillna(side_trends_as)
@@ -388,10 +393,10 @@ class Market_processing(get_market_plots):
         if drop_MA_cols: labeled_df.drop([f"MA{str(windows[0])}", f"MA{str(windows[1])}"], axis = 1, 
                                      inplace= True)
         
-        overall_trend = labeled_df["MA_trend"].iloc[-1]
+        overall_trend = labeled_df[trend_col_name].iloc[-1]
         
         if inplace: self.df = labeled_df
-        return labeled_df, overall_trend
+        return labeled_df[trend_col_name], overall_trend
     
     
     
@@ -417,13 +422,13 @@ class Market_processing(get_market_plots):
         overall_trend = df_[trend_col_name].iloc[-1]
         
         if inplace: self.df = df_
-        return df_, overall_trend
+        return df_[trend_col_name], overall_trend
     
     
     
     def eval_trend_with_ROC(self, column:str = "close" ,nperiods:int = 14, drop_ROC:bool = False, 
                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, 
-                            trend_col_name:str = 'ROC_trend'):
+                            trend_col_name:str = 'ROC_trend', inplace:bool = True):
         
         df_ = self.df.copy()
         df_['ROC'] = ((df_[column] - df_[column].shift(nperiods)) / df_[column].shift(nperiods)) * 100
@@ -440,46 +445,10 @@ class Market_processing(get_market_plots):
         overall_trend = df_[trend_col_name].iloc[-1]
         
         if drop_ROC : df_.drop("ROC", axis = 1 , inplace = True)
-        self.df = df_
-        return df_ , overall_trend
+        if inplace: self.df = df_
+        return df_[trend_col_name] , overall_trend
            
            
-    
-    def draw_trend_highlight(self, fig:go.Figure, column:str = "MA_trend", dataframe:pd.DataFrame = None
-                   , up_trend_color:str = "blue", down_trend_color:str = "red"
-                   , side_trend_color:str = "yellow"):
-        """visualizes the evaluated trend with highlighted candles.
-
-        Args:
-            fig (go.Figure): add trend plot to this fig.
-            column (str, optional): name of the trend col you want to plot. Defaults to "MA_trend".
-            dataframe (pd.DataFrame, optional): you can give a new df else it will use self.df.
-            Defaults to None.
-            up_trend_color (str, optional): color of up_trend candles. Defaults to "blue".
-            down_trend_color (str, optional): color of down_trend candles. Defaults to "red".
-            side_trend_color (str, optional): color of side_trend candles. Defaults to "yellow".
-        """        
-        
-        try: df_ = dataframe.copy()
-        except: df_ = self.df.copy()
-            
-        trend_grps = df_.copy().groupby(column, sort = True)
-        
-        colors = [down_trend_color , side_trend_color , up_trend_color]
-        trend_names = list(trend_grps.groups.keys())
-        colors_dict = {key:color for key,color in zip(trend_names,colors)}
-          
-        for name,grp in trend_grps :
-            for i,row in grp.iterrows():
-                super().highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
-                
-        if fig.layout.title.text != None: fig.update_layout(title = fig.layout.title.text +" , "+
-                                                            f"trend evaluated with : {column}" )
-        
-        else : fig.update_layout(title = f"trend evaluated with : {column}" )
-        
-    
-        
 
              
     
