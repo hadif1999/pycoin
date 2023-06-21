@@ -314,7 +314,7 @@ class Market_Processing():
                                   high_trend_label:int = 1, 
                                   low_trend_label:int = -1,
                                   side_trend_label:int = 0,
-                                  fill_between_same_trends:bool = True
+                                  fill_side_between_same_trends:bool = False
                                   ):
         """evaluates trend with high and lows evaluated with remove_less_than_min_time method.
 
@@ -354,10 +354,17 @@ class Market_Processing():
                 
                 # assign high_trend_ labels to pivots that are hh and hl (same for downtrend)
                 if is_hh and is_hl: 
-                    df_.loc[ min(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = high_trend_label
+                    to_fill_highs = df_.loc[ min(last_max_ind, last_min_ind):max(max_ind, min_ind),
+                                             trend_col_name]
+                    inds_high = to_fill_highs.mask(to_fill_highs == side_trend_label , high_trend_label)
+                    df_.loc[inds_high.index, trend_col_name] = inds_high
+                    
                 elif is_lh and is_ll: 
-                    df_.loc[ min(last_max_ind, last_min_ind): max(max_ind, min_ind), trend_col_name] = low_trend_label
-                
+                    to_fill_lows = df_.loc[ min(last_max_ind, last_min_ind):max(max_ind, min_ind),
+                                           trend_col_name]
+                    inds_low = to_fill_lows.mask(to_fill_lows == side_trend_label, low_trend_label)
+                    df_.loc[inds_low.index, trend_col_name] = inds_low
+
                 # labeling the last pivot                
                 if i == min( len(max_idx), len(min_idx) )-1 and len(max_idx) != len(min_idx):
                     
@@ -377,15 +384,17 @@ class Market_Processing():
             last_min_ind = min_ind
         
         # fill between same trends that there is side trend in between
-        if fill_between_same_trends:
+        if fill_side_between_same_trends:
             grps = df_.groupby(trend_col_name).groups
             for key,val in grps.items():
                 ser = pd.Series(val, name=f"{key}")
                 for j,ind in ser[ser.diff()>1].items():
                     if (df_.loc[ser[j-1]+1:ser[j]-1, trend_col_name] == side_trend_label).all():
-                        df_.loc[ser[j-1]+1:ser[j]-1, trend_col_name] = key
+                        df_.loc[ser[j-1]+1:ser[j]-1, trend_col_name] = key    
+                        
+        #### fill small trend in one high and low between two same bigger trend 
+        # if fill_small_trend_between_two_bigger_trend
                     
-        
         if inplace : self.df = df_
         return df_[trend_col_name]
             
