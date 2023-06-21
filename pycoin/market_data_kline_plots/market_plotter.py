@@ -447,9 +447,13 @@ class Market_Plotter():
     
     
     
-    def draw_trend_highlight(self, column:str = "MA_trend", dataframe:pd.DataFrame = None
-                   , up_trend_color:str = "blue", down_trend_color:str = "red"
-                   , side_trend_color:str = "yellow", **kwargs):
+    def draw_trend_highlight(self, column:str = "MA_trend",
+                            dataframe:pd.DataFrame = None,
+                            up_trend_color:str = "blue",
+                            down_trend_color:str = "red",
+                            side_trend_color:str = "yellow",
+                            add_high_lows:bool = True,
+                            **kwargs):
         """visualizes the evaluated trend with highlighted candles.
 
         Args:
@@ -463,7 +467,12 @@ class Market_Plotter():
         """        
         self.update_params
         fig = self.empty_figure(fig_size = kwargs.get("fig_size",[1100,600]),
-                                slider = kwargs.get("slider",False))        
+                                slider = kwargs.get("slider",False))
+        
+        if add_high_lows:
+            shapes = self.plot_high_lows(return_only_shapes = True, R = kwargs.get("R",1000),
+                                         y_scale= kwargs.get("y_scale",0.1))
+            fig.layout.shapes = shapes        
         
         try: df_ = dataframe.copy()
         except: df_ = self.df.copy()
@@ -480,13 +489,15 @@ class Market_Plotter():
                 
         fig.update_layout( title = f"{self.symbol} | {self.interval}, trend evaluated with: {column}")
         
+        
         return fig
         
         
         
     
     def plot_high_lows(self, min_color:str = "red", max_color:str = "green" ,
-                                R:int = 400, y_scale:float = 0.1, **kwargs):
+                                R:int = 400, y_scale:float = 0.1, 
+                                return_only_shapes:bool = False, **kwargs):
         """adds circle shapes for highs and lows for visualizing.
 
         Args:
@@ -517,8 +528,9 @@ class Market_Plotter():
             
         for high_coord in self.highs_df:
             self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
-   
-        return fig
+
+        if return_only_shapes: return fig.layout.shapes
+        else: return fig
         
     
         

@@ -1,5 +1,4 @@
 import pandas as pd
-from ..market_data_kline_plots.market_plotter import Market_Plotter
 import plotly.graph_objects as go
 import sys
 sys.setrecursionlimit(10000)
@@ -10,9 +9,10 @@ from ta.trend import MACD
 from scipy.signal import argrelextrema
 import time
 import kucoin.client as kc
+import os
 
 
-class Market_Processing(Market_Plotter):
+class Market_Processing():
     
     intervals = {
                  "1min":1*60, "3min":3*60, "5min":5*60, "15min":15*60, "30min":30*60,
@@ -83,15 +83,19 @@ class Market_Processing(Market_Plotter):
                 
                 if verbose:
                     print("\n\nfirst datetime is: ",
-                        self.ts2dt( int(df_temp.iloc[0].timestamp) ) ,
+                        dt.datetime.fromtimestamp(int(df_temp.iloc[0]["timestamp"])).__str__() ,
                         "\nlast datetime till now is: ",
-                        self.ts2dt( int(df_temp.iloc[-1].timestamp) )
+                        dt.datetime.fromtimestamp(int(df_temp.iloc[-1]["timestamp"])).__str__()
                          ) 
 
             except :      
                  # check if we got the data of new timestamp else exits loop
-                if ts_temp_end == ts_temp_last: break
-                elif ts_temp_end != ts_temp_last: 
+                if (dt.datetime.fromtimestamp(ts_temp_end).year == 
+                    dt.datetime.fromtimestamp(start_timestamp).year) and ts_temp_last == ts_temp_end: 
+                    print("***done***\n\n")
+                    break
+                
+                else: 
                     ts_temp_end = int(candles_temp[-1][0])
                     time.sleep(10)
                     continue
@@ -105,11 +109,46 @@ class Market_Processing(Market_Plotter):
         if reverse_df: df_temp = df_temp.reindex(index= df_temp.index[::-1]).reset_index(drop = True)
         if inplace: self.df = df_temp 
         return df_temp
+    
+    
+    
+    def download_save_all_timeframes(self, path:str, except_timeframes:list = ["1min","3min", "5min"],
+                                     as_csv = True, rm_past_downloads = False):
+        
+        import shutil as sh
+
+        intervals = list(self.intervals.keys())
+        _ = [intervals.remove(excep) for excep in except_timeframes]
+        
+        os.chdir(path)
+        if rm_past_downloads: _ = [sh.rmtree(dir) for dir in os.listdir() if f"{self.symbol}|" in dir]
+        
+        new_dir = f"{self.symbol}|{dt.datetime.fromtimestamp(time.time().__int__()).__str__()}"
+        os.mkdir(new_dir)
+        
+        for interval in intervals:
+            print(f"\ndownloading {self.symbol}|{interval}...\n")
+            obj = Market_Processing(self.symbol, interval)
+            
+            flag = True
+            while flag:
+                try: 
+                    obj.download_kline_as_df(start_timestamp=dt.datetime(2017, 1, 1).timestamp().__int__(),
+                                             reverse_df = True, verbose = True, inplace = True)
+                    flag = False
+                except: 
+                    print(f"\nerror occurred. getting {self.symbol}|{interval} data again...\n")
+                    continue
+                    
+            obj.save_market( path = new_dir, as_csv = as_csv )
+            os.chdir(path)
+            del obj
+        print(f"\ndone.\n saved files are: \n{os.listdir(new_dir)}")
         
 
 
     def load_kline_data(self , file_name:str, reverse:bool = False, 
-                        inplace:bool = True) -> pd.DataFrame :
+                        inplace:bool = True, check_timeframe:bool = True) -> pd.DataFrame :
             """reads kline date in .csv or .xlsx format.
 
             Args:
@@ -130,18 +169,23 @@ class Market_Processing(Market_Plotter):
             if reverse: df = df.reindex(index= df.index[::-1])
             df.reset_index(drop = True, inplace = True)
             
-            if ((df["datetime"].iloc[0] - df["datetime"].iloc[1]).__abs__().total_seconds()
-                != self.intervals[self.interval]):
-                raise Exception(f"interval of your input dataframe is not {self.interval}")   
-            
+            if check_timeframe:
+                if self.check_timeframe(df = df) == False:
+                    raise Exception(f"interval of your input dataframe is not {self.interval}")   
+                
             if inplace: self.df = df
             return df
         
-    def save_market(self, path:str = None, as_csv:bool = True):
-        if path == None: path = ""
-        if as_csv: self.df.to_csv(path + f"{self.symbol}|{self.interval}.csv")
-        else: self.df.to_excel(path + f"{self.symbol}|{self.interval}.xlsx")
+    def save_market(self, path:str = None, as_csv:bool = True, add_text:str = ""):
+        import os        
+        os.chdir(path)
+        
+        if as_csv: self.df.to_csv(f"{self.symbol}|{self.interval}|{add_text}.csv")
+        else: self.df.to_excel(f"{self.symbol}|{self.interval}|{add_text}.xlsx")
+        os.chdir("..")
+        
         print("done")
+    
     
     @property    
     def market_df(self):
@@ -154,6 +198,13 @@ class Market_Processing(Market_Plotter):
     @market_df.setter
     def market_df(self, df:pd.DataFrame):
         self.df = df
+        
+        
+    def check_timeframe(self, df):
+        return True if ((df["datetime"].iloc[0] - df["datetime"].iloc[1]).__abs__().total_seconds()
+            == self.intervals[self.interval]) else False
+             
+    
         
         
     def group_klines(self, df:pd.DataFrame, *grp_bys):
@@ -258,9 +309,13 @@ class Market_Processing(Market_Plotter):
     
     
     
-    def eval_trend_with_high_lows(self, trend_col_name:str = "high_low_trend", inplace:bool = True,
-                                  high_trend_label:int = 1, low_trend_label:int = -1,
-                                  side_trend_label:int = 0):
+    def eval_trend_with_high_lows(self, trend_col_name:str = "high_low_trend", 
+                                  inplace:bool = True,
+                                  high_trend_label:int = 1, 
+                                  low_trend_label:int = -1,
+                                  side_trend_label:int = 0,
+                                  fill_between_same_trends:bool = True
+                                  ):
         """evaluates trend with high and lows evaluated with remove_less_than_min_time method.
 
         Args:
@@ -281,7 +336,7 @@ class Market_Processing(Market_Plotter):
             high_col = self.pivots["highs"]["column"]
             low_col = self.pivots["lows"]["column"]
         except:
-            raise Exception("no high and lows calculated yet! first run obj.get_market_high_lows.")
+            raise ValueError("no high and lows calculated yet! first run obj.get_market_high_lows.")
         
         df_ = self.df.copy()
         df_[trend_col_name] = side_trend_label
@@ -320,7 +375,17 @@ class Market_Processing(Market_Plotter):
                           
             last_max_ind = max_ind
             last_min_ind = min_ind
-            
+        
+        # fill between same trends that there is side trend in between
+        if fill_between_same_trends:
+            grps = df_.groupby(trend_col_name).groups
+            for key,val in grps.items():
+                ser = pd.Series(val, name=f"{key}")
+                for j,ind in ser[ser.diff()>1].items():
+                    if (df_.loc[ser[j-1]+1:ser[j]-1, trend_col_name] == side_trend_label).all():
+                        df_.loc[ser[j-1]+1:ser[j]-1, trend_col_name] = key
+                    
+        
         if inplace : self.df = df_
         return df_[trend_col_name]
             
