@@ -82,3 +82,39 @@ def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
                 except IndexError : break
                 
             return highs_df.index.to_list(), lows_df.index.to_list()
+        
+        
+def fill_between_trends(df:pd.DataFrame , rm_below_ncandles:list = [500,500,500], 
+                        trend_col = "high_low_trend", side_trend_label = 0 ,
+                        fill_side_between_same = False,
+                        fill_other_between_same = False):
+        """this function can remove trends found between two same bigger trends. 
+        also can remove any side trend between to same trends.
+
+        Args:
+            df (pd.DataFrame): input dataframe
+            rm_below_ncandles (list, optional): removes small trends if they are
+            smaller than this candle size [min size between lowtrends,
+            min size between sidetrends, min size between hightrends]. Defaults to [500,500,500].
+            trend_col (str, optional): name of column holds the trend labels. Defaults to "high_low_trend".
+            side_trend_label (_type_, optional): label of side trend. Defaults to side_trend_label.
+            fill_side_between_same (_type_, optional): if True removes all sides between trends.
+            Defaults to fill_side_between_same_trends.
+
+        Returns:
+            _type_: _description_
+        """            
+        df_ = df.copy()
+        grps = df_.groupby(trend_col, sort = True).groups
+        
+        for label, ncandles in zip(grps.keys(), rm_below_ncandles):
+            ser = pd.Series( grps[label], name = f"{label}")
+            inds = ser[ser.diff() > 1].index.to_list()
+            for ind in inds:
+                small_trend = df_.loc[ ser[ind-1]+1 : ser[ind]-1, "high_low_trend" ]
+                if small_trend.all() == side_trend_label and fill_side_between_same: 
+                    df_.loc[ ser[ind-1]+1 : ser[ind]-1, "high_low_trend" ] = label
+                elif len(small_trend) <= ncandles  and fill_other_between_same:
+                    df_.loc[ ser[ind-1]+1 : ser[ind]-1, "high_low_trend" ] = label
+        return df_ 
+

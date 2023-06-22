@@ -239,7 +239,8 @@ class Market_Processing():
                              high_col:str = "high", low_col:str = "low", datetime_col:str = "datetime",
                              min_time_dist:list = dt.timedelta(seconds = 24000),
                              fill_between_two_same:bool = True,
-                             remove_under_min_time_dist:bool = True):
+                             remove_under_min_time_dist:bool = True,
+                             ):
         """this function evaluates input market highs, lows. and returns their index. 
 
         Args:
@@ -314,21 +315,33 @@ class Market_Processing():
                                   high_trend_label:int = 1, 
                                   low_trend_label:int = -1,
                                   side_trend_label:int = 0,
-                                  fill_side_between_same_trends:bool = False
+                                  fill_between_same_trends:bool = True,
+                                  remove_less_than_n_candles = [500,100,500], # [lowtrend,sidetrend,hightrend] 
+                                  fill_side_between_same_trends:bool = True,
                                   ):
         """evaluates trend with high and lows evaluated with remove_less_than_min_time method.
 
         Args:
-            trend_col_name (str, optional): final name of trend col name generate by this method. 
-                Defaults to "high_low_trend".
-            inplace (bool, optional): add the trend col to self.df or not. Defaults to True.
-            high_trend_label (int, optional): label of high trend classes. Defaults to 1.
-            low_trend_label (int, optional): label of low trend classes. Defaults to -1.
-            side_trend_label (int, optional): label of side trend classes. Defaults to 0.
+            trend_col_name (str, optional): name of column to add trend labels. Defaults to "high_low_trend".
+            inplace (bool, optional): change the main object dataframe or not. Defaults to True.
+            high_trend_label (int, optional): label of hightrend. Defaults to 1.
+            low_trend_label (int, optional): label of lowtrend. Defaults to -1.
+            side_trend_label (int, optional): label of sidetrend. Defaults to 0.
+            fill_between_same_trends (bool, optional): fill small trends between two bigger
+            same trends or not. Defaults to True.
+            remove_less_than_n_candles (list, optional): removes small trends if they are smaller
+            than this candle size[min size between lowtrends, min size between sidetrends,
+            min size between hightrends] this arg will be ignored if fill_between_same_trends is False.
+            Defaults to [500,500,500].. Defaults to [1000,1000,1000].
+            fill_side_between_same_trends (bool, optional): remove all sidetrends between two 
+            same trends or not. this arg will be ignored if fill_between_same_trends is False.
+
+        Raises:
+            ValueError: _description_
 
         Returns:
-            df_(pd.Dataframe): updated dataframe with evaluated trend labels.
-        """        
+            _type_: _description_
+        """           
         
         try:
             max_idx = self.pivots["highs"]["idx"]
@@ -361,7 +374,7 @@ class Market_Processing():
                     
                 elif is_lh and is_ll: 
                     to_fill_lows = df_.loc[ min(last_max_ind, last_min_ind):max(max_ind, min_ind),
-                                           trend_col_name]
+                                            trend_col_name]
                     inds_low = to_fill_lows.mask(to_fill_lows == side_trend_label, low_trend_label)
                     df_.loc[inds_low.index, trend_col_name] = inds_low
 
@@ -383,21 +396,24 @@ class Market_Processing():
             last_max_ind = max_ind
             last_min_ind = min_ind
         
-        # fill between same trends that there is side trend in between
-        if fill_side_between_same_trends:
-            grps = df_.groupby(trend_col_name).groups
-            for key,val in grps.items():
-                ser = pd.Series(val, name=f"{key}")
-                for j,ind in ser[ser.diff()>1].items():
-                    if (df_.loc[ser[j-1]+1:ser[j]-1, trend_col_name] == side_trend_label).all():
-                        df_.loc[ser[j-1]+1:ser[j]-1, trend_col_name] = key    
-                        
-        #### fill small trend in one high and low between two same bigger trend 
-        # if fill_small_trend_between_two_bigger_trend
+        # filling between same trend
+        from .trend_filters import fill_between_trends
+        
+        if fill_between_same_trends :
+                
+                df_ = fill_between_trends(df_, remove_less_than_n_candles, trend_col_name ,
+                                        side_trend_label = side_trend_label,
+                                        fill_side_between_same = False,
+                                        fill_other_between_same= fill_between_same_trends) 
+                
+                df_ = fill_between_trends(df_, remove_less_than_n_candles, trend_col_name ,
+                                        side_trend_label = side_trend_label,
+                                        fill_side_between_same = fill_side_between_same_trends,
+                                        fill_other_between_same=False)                  
                     
         if inplace : self.df = df_
         return df_[trend_col_name]
-            
+         
             
     @property
     def tick(self):
