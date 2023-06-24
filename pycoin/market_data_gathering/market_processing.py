@@ -14,11 +14,17 @@ import os
 
 class Market_Processing():
     
-    intervals = {
+    INTERVALS = {
                  "1min":1*60, "3min":3*60, "5min":5*60, "15min":15*60, "30min":30*60,
                  "1hour":60*60, "2hour":2*60*60,"4hour":4*60*60 ,"6hour":6*60*60,
                  "8hour":8*60*60, "12hour":12*60*60, "1day":24*60*60,"1week":7*24*60*60
                 }
+    
+    SUGGESTED_CANDLE_RANGE = {
+                "1min":1600*3*2*3, "3min":1600*3*2, "5min":1600*3, "15min":1600, "30min":800,
+                "1hour":400, "2hour":200,"4hour":100 ,"6hour":80,
+                "8hour":50, "12hour": 100//3 , "1day": 100//6,"1week":(100//6)//7
+            }
     
     def __init__(self, symbol = "BTC-USDT", interval:str = "4hour") -> None:
         ''' Args:
@@ -29,7 +35,7 @@ class Market_Processing():
         self.symbol = symbol
         self.market = kc.Market(url = 'https://api.kucoin.com')
         
-        if interval in self.intervals.keys(): 
+        if interval in self.INTERVALS.keys(): 
             self.interval = interval
         else: raise ValueError("entered interval value not found !")
         
@@ -148,7 +154,11 @@ class Market_Processing():
 
 
     def load_kline_data(self , file_name:str, reverse:bool = False, 
-                        inplace:bool = True, check_timeframe:bool = True) -> pd.DataFrame :
+                        inplace:bool = True, check_timeframe:bool = True,
+                        column_names = dict(close_col = "close", open_col = "open",
+                                            high_col = "high", low_col = "low",
+                                            datetime_col = "datetime", timestamp_col = "timestamp")
+                        ) -> pd.DataFrame :
             """reads kline date in .csv or .xlsx format.
 
             Args:
@@ -160,6 +170,16 @@ class Market_Processing():
             if "csv" in file_name: df = pd.read_csv(file_name)
             elif "xlsx" in file_name : df = pd.read_excel(file_name)
             else : "file format must be .csv or .xlsx"
+            
+            new_column_names = dict(close_col = "close", open_col = "open",
+                                    high_col = "high", low_col = "low",
+                                    datetime_col = "datetime", timestamp_col = "timestamp")
+                                   
+            df.rename( columns = { column_names[col] : new_column_names[col] 
+                                  for col in column_names.keys() },
+                       inplace = True 
+                     )
+            
             # converting format of data columns
             df["timestamp"] = df.timestamp.astype("Int64")
             df["datetime"] = pd.to_datetime( df["timestamp"], unit = 's')
@@ -172,9 +192,10 @@ class Market_Processing():
             if check_timeframe:
                 if self.check_timeframe(df = df) == False:
                     raise Exception(f"interval of your input dataframe is not {self.interval}")   
-                
+            
             if inplace: self.df = df
             return df
+        
         
     def save_market(self, path:str = None, as_csv:bool = True, add_text:str = ""):
         import os        
@@ -202,7 +223,7 @@ class Market_Processing():
         
     def check_timeframe(self, df):
         return True if ((df["datetime"].iloc[0] - df["datetime"].iloc[1]).__abs__().total_seconds()
-            == self.intervals[self.interval]) else False
+            == self.INTERVALS[self.interval]) else False
              
     
         
@@ -223,7 +244,6 @@ class Market_Processing():
           
         grps = []
         
-        
         if "year" in by : grps.append(df["datetime"].dt.year) 
         if "month" in by : grps.append(df["datetime"].dt.month)
         if "day" in by : grps.append(df["datetime"].dt.day)
@@ -235,16 +255,18 @@ class Market_Processing():
         
         
     def get_market_high_lows(self, dataframe:pd.DataFrame = None, 
-                             candle_range:int = 100, mode:str = "clip", 
+                             candle_range:int = None, mode:str = "clip", 
                              high_col:str = "high", low_col:str = "low", datetime_col:str = "datetime",
-                             min_time_dist:list = dt.timedelta(seconds = 24000),
+                             min_time_dist:list = dt.timedelta(hours= 13),
                              fill_between_two_same:bool = True,
                              remove_under_min_time_dist:bool = True,
+                             inplace:bool = True
                              ):
         """this function evaluates input market highs, lows. and returns their index. 
 
         Args:
-            candle_range (int, optional): looks for highs and lows in every n candles. Defaults to 100.
+            candle_range (int, optional): looks for highs and lows in every n candles. if None it will use
+            suggested candle range that evaluated with tests.
             mode (str, optional): how to treat with start and end of bound. Defaults to "clip".
             high_col (str, optional): col to look for highs in. Defaults to "high".
             low_col (str, optional): col to look for lows in. Defaults to "low".
@@ -261,6 +283,8 @@ class Market_Processing():
         """        
         try: df_ = dataframe.copy()
         except: df_ = self.df.copy()
+        
+        if candle_range == None: candle_range = self.SUGGESTED_CANDLE_RANGE[self.interval]
                 
         # evaluating min and max from argrelextrema function which finds high and lows
         max_idx = argrelextrema(data = np.array(df_[high_col].values.tolist()), 
@@ -295,16 +319,17 @@ class Market_Processing():
         max_idx.sort()
         min_idx.sort()
 
-        self.highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates().values.tolist()
-        self.lows_df = df_.iloc[min_idx][["datetime",low_col]].drop_duplicates().values.tolist()
-        
-        self.pivots["highs"]["idx"] = max_idx
-        self.pivots["highs"]["column"] = high_col
-        self.pivots["highs"]["df_val"] = self.highs_df
-        
-        self.pivots["lows"]["idx"] = min_idx
-        self.pivots["lows"]["column"] = low_col
-        self.pivots["lows"]["df_val"] = self.lows_df
+        if inplace:
+            self.highs_df = df_.iloc[max_idx][["datetime", high_col]].drop_duplicates().values.tolist()
+            self.lows_df = df_.iloc[min_idx][["datetime",low_col]].drop_duplicates().values.tolist()
+            
+            self.pivots["highs"]["idx"] = max_idx
+            self.pivots["highs"]["column"] = high_col
+            self.pivots["highs"]["df_val"] = self.highs_df
+            
+            self.pivots["lows"]["idx"] = min_idx
+            self.pivots["lows"]["column"] = low_col
+            self.pivots["lows"]["df_val"] = self.lows_df
 
         return max_idx , min_idx
     
@@ -316,7 +341,7 @@ class Market_Processing():
                                   low_trend_label:int = -1,
                                   side_trend_label:int = 0,
                                   fill_between_same_trends:bool = True,
-                                  remove_less_than_n_candles = [500,100,500], # [lowtrend,sidetrend,hightrend] 
+                                  remove_less_than_n_candles = [100,100,100], # [lowtrend,sidetrend,hightrend] 
                                   fill_side_between_same_trends:bool = True,
                                   ):
         """evaluates trend with high and lows evaluated with remove_less_than_min_time method.
@@ -382,14 +407,12 @@ class Market_Processing():
                 if i == min( len(max_idx), len(min_idx) )-1 and len(max_idx) != len(min_idx):
                     
                     if len(min_idx) > len(max_idx) : 
-                        if (df_[low_col].iloc[min_idx[-1]] < df_[low_col].iloc[min_ind] and
-                            df_[low_col].iloc[min_idx[-1]] < df_[low_col].iloc[last_min_ind]) :
+                        if (df_[low_col].iloc[min_idx[-1]] < df_[low_col].iloc[last_min_ind]) :
                             
                             df_.loc[min_ind: min_idx[-1], trend_col_name] = low_trend_label
                             
                     if len(max_idx) > len(min_idx):
-                        if (df_[high_col].iloc[max_idx[-1]] > df_[high_col].iloc[max_ind] and
-                            df_[high_col].iloc[max_idx[-1]] > df_[high_col].iloc[last_max_ind]):
+                        if (df_[high_col].iloc[max_idx[-1]] > df_[high_col].iloc[last_max_ind]):
                             
                             df_.loc[max_ind: max_idx[-1], trend_col_name] = high_trend_label
                           
@@ -405,6 +428,7 @@ class Market_Processing():
                                         side_trend_label = side_trend_label,
                                         fill_side_between_same = False,
                                         fill_other_between_same= fill_between_same_trends) 
+        if fill_side_between_same_trends:        
                 
                 df_ = fill_between_trends(df_, remove_less_than_n_candles, trend_col_name ,
                                         side_trend_label = side_trend_label,

@@ -9,12 +9,13 @@ import re
 from typing import Dict
 from typing import List
 import numpy as np
+from ..market_data_gathering.market_processing import Market_Processing
 
 
 
 class Market_Plotter(): 
     
-    def __init__(self, process_obj) -> None:
+    def __init__(self, process_obj:Market_Processing) -> None:
         self.market_obj = process_obj
         self.update_params
     
@@ -180,9 +181,7 @@ class Market_Plotter():
             if len( list(grp_by.keys()) ) == 1 : grp = grps.get_group( list(grp_by.values())[0] ) 
             else: grp = grps.get_group( tuple(grp_by.values()) )      # get specified grp of data 
             grp = grp.reset_index(drop = True)
-            
-            str_temp = str(grp_by)
-            
+                        
             # if the name of df columns are not standard they will be specified here
             if all(True if _ in args.keys() else False for _ in ["x","open","close","low"]):
                 candlestick_data = self.df2candlestick( grp, OPEN = args["open"], CLOSE = args["close"],
@@ -196,7 +195,6 @@ class Market_Plotter():
         else: 
             # plot full data if plot_by_grp is False
             candlestick_data = self.df2candlestick( dataframe , name = self.symbol+" candlestick data") 
-            str_temp = ""
              
         fig = go.Figure(  data = [candlestick_data] )
         
@@ -205,13 +203,15 @@ class Market_Plotter():
         fig_size = args.get("fig_size", [1100,600] )
         
         if type(slider) != bool: raise ValueError("slider param must be bool type.")
-        if type(args["fig_size"]) != list:raise ValueError(" 'fig_size' must be a 2 element list")
+        if type(fig_size) != list:raise ValueError(" 'fig_size' must be a 2 element list")
         
-        fig.update_layout(title = f"{self.symbol}|{self.interval}, date: {str_temp}",
+        fig.update_layout(
+                          title = f"{self.symbol}|{self.interval}, date: {dataframe.datetime.iloc[0]} to {dataframe.datetime.iloc[-1]}",
                           yaxis_title = self.symbol,
                           xaxis_rangeslider_visible = slider,
                           width = fig_size[0], height = fig_size[1],
-                          dragmode = "pan", margin=dict(l=15, r=10, t=35, b=12))
+                          dragmode = "pan", margin=dict(l=15, r=10, t=35, b=12)
+                         )
         
         if replace_df_with_grp: 
             self.market_obj.market_df = grp.copy()
@@ -452,7 +452,7 @@ class Market_Plotter():
                             up_trend_color:str = "blue",
                             down_trend_color:str = "red",
                             side_trend_color:str = "yellow",
-                            add_high_lows:bool = True,
+                            add_high_lows_shapes:bool = True,
                             **kwargs):
         """visualizes the evaluated trend with highlighted candles.
 
@@ -469,7 +469,7 @@ class Market_Plotter():
         fig = self.empty_figure(fig_size = kwargs.get("fig_size",[1100,600]),
                                 slider = kwargs.get("slider",False))
         
-        if add_high_lows:
+        if add_high_lows_shapes:
             shapes = self.plot_high_lows(return_only_shapes = True, R = kwargs.get("R",1000),
                                          y_scale= kwargs.get("y_scale",0.1))
             fig.layout.shapes = shapes        
@@ -487,7 +487,9 @@ class Market_Plotter():
             for i,row in grp.iterrows():
                 self.highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
                 
-        fig.update_layout( title = f"{self.symbol} | {self.interval}, trend evaluated with: {column}")
+        fig.update_layout( title = f"{self.symbol} | {self.interval}, trend evaluated with: {column}",
+                          yaxis_title = self.symbol
+                         )
         
         
         return fig
@@ -529,6 +531,11 @@ class Market_Plotter():
         for high_coord in self.highs_df:
             self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
 
+        fig.update_layout(
+                          title = f"{self.symbol}|{self.interval}, date: {self.df.datetime.iloc[0]} to {self.df.datetime.iloc[-1]}",
+                          yaxis_title = self.symbol
+                         )
+                    
         if return_only_shapes: return fig.layout.shapes
         else: return fig
         
