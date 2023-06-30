@@ -289,9 +289,11 @@ class Market_Plotter():
                                                                              family="Courier New, monospace",
                                                                              size = font_size))
         
-        if side == "h" or side == "hor":  fig.add_hline( y = c, line = line_ , label = label_, editable = True )
+        if side == "h" or side == "hor":  fig.add_hline( y = c, line = line_ , label = label_, editable = True,
+                                                        name = "helllo")
         
-        elif side == "v" or side == "ver": fig.add_vline(x = c, line = line_ , label = label_, editable = True )
+        elif side == "v" or side == "ver": fig.add_vline(x = c, line = line_ , label = label_, editable = True, 
+                                                         kwargs = kwargs.get("name","") )
         
         else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal line or
                               'v' or 'ver' to draw vertical line.

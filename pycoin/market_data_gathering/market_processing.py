@@ -157,7 +157,8 @@ class Market_Processing():
                         inplace:bool = True, check_timeframe:bool = True,
                         column_names = dict(close_col = "close", open_col = "open",
                                             high_col = "high", low_col = "low",
-                                            datetime_col = "datetime", timestamp_col = "timestamp")
+                                            datetime_col = "datetime", timestamp_col = "timestamp",
+                        )
                         ) -> pd.DataFrame :
             """reads kline date in .csv or .xlsx format.
 
@@ -170,6 +171,8 @@ class Market_Processing():
             if "csv" in file_name: df = pd.read_csv(file_name)
             elif "xlsx" in file_name : df = pd.read_excel(file_name)
             else : "file format must be .csv or .xlsx"
+            
+            
             
             new_column_names = dict(close_col = "close", open_col = "open",
                                     high_col = "high", low_col = "low",

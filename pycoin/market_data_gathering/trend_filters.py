@@ -66,7 +66,7 @@ def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
                 to_remove_pair_ind = highs_df[time_diff.min() == time_diff].index[0]
                 ind = max_idx.index(to_remove_pair_ind)
                 if ind == len(highs_df)-1 :break
-                to_remove_ind = highs_df[highs_df.iloc[ind-1:ind+1][high_col].min() == highs_df[high_col]].index[0]
+                to_remove_ind = highs_df[highs_df.iloc[ind-1:ind][high_col].min() == highs_df[high_col]].index[0]
                 highs_df.drop(to_remove_ind, axis = 0, inplace = True)
             
             # removing lows closer than specified time 
@@ -76,7 +76,7 @@ def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
                     to_remove_pair_ind = lows_df[time_diff.min() == time_diff].index[0]
                     ind = min_idx.index(to_remove_pair_ind)
                     if ind == len(lows_df)-1 :break
-                    to_remove_ind = lows_df[lows_df.iloc[ind-1:ind+1][low_col].max() == lows_df[low_col]].index[0]
+                    to_remove_ind = lows_df[lows_df.iloc[ind-1:ind][low_col].max() == lows_df[low_col]].index[0]
                     lows_df.drop(to_remove_ind, axis = 0, inplace = True)
                 
                 except IndexError : break
