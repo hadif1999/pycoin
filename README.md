@@ -1,4 +1,4 @@
-# pykucoin
+# pycoin
 ### a toobox wrriten to simplify some common alghorithmic trading processes.
 uses plotly package for visualization, python-kucoin for extracting data, ta to calculate indicators, also pandas and numpy( examples in example file)
 ### what can this package do:
