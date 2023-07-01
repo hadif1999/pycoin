@@ -76,6 +76,10 @@ market_obj.df
 from pycoin.market_data_kline_plots.market_plotter import Market_Plotter
 plots = Market_Plotter(market_obj)
 
+# if plot_by_grp is False then it will plot the whole candlestick data (market_obj.df)
+figure, _ = plots.plot_market( plot_by_grp = False,fig_size = [1100,600], slider = False)
+
+
 # if plot_by_grp is True you can plot candlestick data by group and plot a specific year, month, day
 figure, grp_df = plots.plot_market( plot_by_grp = True, year = 2023,
                                     fig_size = [1100,600],
@@ -83,8 +87,6 @@ figure, grp_df = plots.plot_market( plot_by_grp = True, year = 2023,
                                     slider = False
                                   )
 
-# if plot_by_grp is False then it will plot the whole candlestick data (market_obj.df)
-figure, _ = plots.plot_market( plot_by_grp = False,fig_size = [1100,600], slider = False)
 
 figure.show()
 

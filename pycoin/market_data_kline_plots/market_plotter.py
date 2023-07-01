@@ -146,7 +146,7 @@ class Market_Plotter():
     
     
     
-    def plot_market(self , plot_by_grp:bool = True, replace_df_with_grp:bool = False ,
+    def plot_market(self , plot_by_grp:bool = False, replace_df_with_grp:bool = False ,
                     show_fig:bool = False, **args):
         """plots data as candlestick format. 
 
