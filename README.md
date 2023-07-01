@@ -9,6 +9,8 @@ uses plotly package for visualization, python-kucoin for extracting data, ta to 
 5. can find market trend.
 6. you can use it to deploy many strategies such as indicator based, price action, etc (in development). 
 also machine learning based strategies will be added in future (in development).
+7. backtesting
+8. getting position
 
 Note: many of the functions in this package works with standard column names, standard column names are:
 "open", "close", "high", "low", "volume", "datetime", "timestamp". 
@@ -121,8 +123,12 @@ plots.draw_trend_highlight(column = "high_low_trend", add_high_lows = True, R = 
 ```
 ### evaluate trend with SMA
 ```python
+
 market_analysis.eval_trend_with_MAs(drop_MA_cols = True , windows=[50, 200])
 plots.draw_trend_highlight(column = "MA_trend")
+
+```
+
 
 
 
