@@ -92,6 +92,8 @@ figure.show()
 
 ```
 
+![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/btc_h4_2023_candlestick.png?raw=true)
+
 ### evaluating market high & lows
 ```python
 max_indices, min_indices = market_obj.get_market_high_lows( candle_range = 100 , 
@@ -107,6 +109,8 @@ min_time: remove the high or low that is very close to previous one if their tim
 plots.plot_high_lows(R = 5000, y_scale = 0.1)
 
 ```
+![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/btc_h4_2023_high_lows.png?raw=true)
+
 the method above puts a circle for each high and low. 
 R is the radius and y_scale can scale the price in y axis for better visualizing.
 
@@ -123,6 +127,7 @@ plots.draw_trend_highlight(column = "high_low_trend", add_high_lows = True, R = 
                            )
 
 ```
+![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/btc_h4_2023_trend.png?raw=true)
 ### evaluate trend with SMA
 ```python
 
@@ -130,6 +135,7 @@ market_analysis.eval_trend_with_MAs(drop_MA_cols = True , windows=[50, 200])
 plots.draw_trend_highlight(column = "MA_trend")
 
 ```
+![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/btc_h4_2023_MA_trend.png?raw=true)
 
 
 
