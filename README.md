@@ -20,7 +20,7 @@ you can also change your column name using some methods that will be discussed i
 Note: row indexes of your input dataframe must be integer not datetime or timestamp format.
 instead you must have a column named "datetime" that keeps time index of each row. 
 
-## Examples
+## Quick start
 
 after cloning the repo you can use these commands to make a market processing object:
 
@@ -30,7 +30,7 @@ from pycoin.market_data_gathering.market_processing import Market_Processing
 market_obj = Market_Processing(symbol = "BTC-USDT", interval = "4hour")
 
 ```
-### download "4hour" interval of market dataframe using download_kline_as_df method:
+### download "4hour" interval of market dataframe:
 ```python
 
 import datetime as dt
