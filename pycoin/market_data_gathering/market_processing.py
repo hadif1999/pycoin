@@ -49,7 +49,7 @@ class Market_Processing():
                         verbose:bool = True, 
                         start_timestamp:int = dt.datetime(2018,1,1).timestamp().__int__(),
                         inplace:bool = True,
-                        fill_missing_dates:bool = True) -> pd.DataFrame:
+                        fill_missing_dates:bool = Truecoinex) -> pd.DataFrame:
         """requests kucoin api and gathers kline (candlestick) data. returns output as pd.dataframe .
 
         Args:
