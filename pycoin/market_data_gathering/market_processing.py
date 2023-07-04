@@ -154,11 +154,12 @@ class Market_Processing():
 
 
     def load_kline_data(self , file_name:str, reverse:bool = False, 
-                        inplace:bool = True, check_timeframe:bool = True,
+                        inplace:bool = True,
                         column_names = dict(close_col = "close", open_col = "open",
                                             high_col = "high", low_col = "low",
                                             datetime_col = "datetime", timestamp_col = "timestamp",
-                        )
+                                            ),
+                        fill_missing_dates:bool = True
                         ) -> pd.DataFrame :
             """reads kline date in .csv or .xlsx format.
 
@@ -187,15 +188,14 @@ class Market_Processing():
             df["timestamp"] = df.timestamp.astype("Int64")
             df["datetime"] = pd.to_datetime( df["timestamp"], unit = 's')
             df = df[["timestamp","datetime",'open','close','high','low','volume','turnover']]
-            df[ df.columns.to_list()[2:] ] = df[ df.columns.to_list()[2:] ].astype("Float64")
+            df[ df.columns.to_list()[2:] ] = df[ df.columns.to_list()[2:] ].astype("float64")
             
             if reverse: df = df.reindex(index= df.index[::-1])
             df.reset_index(drop = True, inplace = True)
             
-            if check_timeframe:
-                if self.check_timeframe(df = df) == False:
-                    raise Exception(f"interval of your input dataframe is not {self.interval}")   
-            
+            if fill_missing_dates: df = self.fill_missing_dates(df = df)
+
+            df = df.round(4)
             if inplace: self.df = df
             return df
         
@@ -203,12 +203,26 @@ class Market_Processing():
     def save_market(self, path:str = None, as_csv:bool = True, add_text:str = ""):
         import os        
         os.chdir(path)
-        
         if as_csv: self.df.to_csv(f"{self.symbol}|{self.interval}|{add_text}.csv")
         else: self.df.to_excel(f"{self.symbol}|{self.interval}|{add_text}.xlsx")
         os.chdir("..")
-        
         print("done")
+        
+        
+    def fill_missing_dates(self, df:pd.DataFrame):
+        iscorrect = self.check_timeframe(df)
+        df.set_index("datetime", drop = False, inplace = True)
+        if not iscorrect:
+            print("\nfilling missing dates...")
+            new_inds = pd.date_range( df.iloc[0]["datetime"], df.iloc[-1]["datetime"] )
+            df = df.reindex(new_inds)
+        df["datetime"] = df.index
+        df["timestamp"] = [dt_.timestamp().__int__() for dt_ in df.datetime.dt.to_pydatetime()]
+        cols = df.columns.drop(["datetime", "timestamp"])
+        df[cols] = df[cols].astype("float64").interpolate(axis=0, limit_direction = "both")
+        print("done")
+        return df.reset_index(drop = True)
+        
     
     
     @property    
@@ -225,8 +239,15 @@ class Market_Processing():
         
         
     def check_timeframe(self, df):
-        return True if ((df["datetime"].iloc[0] - df["datetime"].iloc[1]).__abs__().total_seconds()
-            == self.INTERVALS[self.interval]) else False
+        iscorrect =  True if ( df.diff()["datetime"][1:].dt.total_seconds()
+                         == self.INTERVALS[self.interval]).all() else False
+        
+        if not iscorrect: 
+            missing_datetimes = df["datetime"][1:][(df.diff()["datetime"][1:].dt.total_seconds() 
+                                                    != self.INTERVALS[self.interval])]
+            print(f"""interval of your input dataframe is not {self.interval} for some rows.
+                                \nmissing datetimes at:\n {missing_datetimes}""")   
+        return iscorrect
              
     
         
@@ -270,7 +291,7 @@ class Market_Processing():
         Args:
             candle_range (int, optional): looks for highs and lows in every n candles. if None it will use
             suggested candle range that evaluated with tests.
-            mode (str, optional): how to treat with start and end of bound. Defaults to "clip".
+            mode (str, optional): how to treat with start and end of bound ("clip" or "wrap"). Defaults to "clip".
             high_col (str, optional): col to look for highs in. Defaults to "high".
             low_col (str, optional): col to look for lows in. Defaults to "low".
             min_time_dist (list, optional): min time distance between two similar pivots to get as a new pivot
@@ -344,7 +365,7 @@ class Market_Processing():
                                   low_trend_label:int = -1,
                                   side_trend_label:int = 0,
                                   fill_between_same_trends:bool = True,
-                                  remove_less_than_n_candles = [100,100,100], # [lowtrend,sidetrend,hightrend] 
+                                  remove_less_than_n_candles = 10, # [lowtrend,sidetrend,hightrend] 
                                   fill_side_between_same_trends:bool = True,
                                   ):
         """evaluates trend with high and lows evaluated with remove_less_than_min_time method.

@@ -84,7 +84,7 @@ def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
             return highs_df.index.to_list(), lows_df.index.to_list()
         
         
-def fill_between_trends(df:pd.DataFrame , rm_below_ncandles:list = [500,500,500], 
+def fill_between_trends(df:pd.DataFrame , rm_below_ncandles:int = 10, 
                         trend_col = "high_low_trend", side_trend_label = 0 ,
                         fill_side_between_same = False,
                         fill_other_between_same = False):
@@ -106,13 +106,14 @@ def fill_between_trends(df:pd.DataFrame , rm_below_ncandles:list = [500,500,500]
         """            
         df_ = df.copy()
         grps = df_.groupby(trend_col, sort = True).groups
+        ncandles = rm_below_ncandles
         
-        for label, ncandles in zip(grps.keys(), rm_below_ncandles):
+        for label in grps.keys():
             ser = pd.Series( grps[label], name = f"{label}")
             inds = ser[ser.diff() > 1].index.to_list()
             for ind in inds:
                 small_trend = df_.loc[ ser[ind-1]+1 : ser[ind]-1, "high_low_trend" ]
-                if small_trend.all() == side_trend_label and fill_side_between_same: 
+                if (small_trend == side_trend_label).all() and fill_side_between_same: 
                     df_.loc[ ser[ind-1]+1 : ser[ind]-1, "high_low_trend" ] = label
                 elif len(small_trend) <= ncandles  and fill_other_between_same:
                     df_.loc[ ser[ind-1]+1 : ser[ind]-1, "high_low_trend" ] = label
