@@ -48,7 +48,8 @@ class Market_Processing():
     def download_kline_as_df(self , reverse_df:bool = False, end_timestamp:int = None , 
                         verbose:bool = True, 
                         start_timestamp:int = dt.datetime(2018,1,1).timestamp().__int__(),
-                        inplace:bool = True) -> pd.DataFrame:
+                        inplace:bool = True,
+                        fill_missing_dates:bool = True) -> pd.DataFrame:
         """requests kucoin api and gathers kline (candlestick) data. returns output as pd.dataframe .
 
         Args:
@@ -113,6 +114,7 @@ class Market_Processing():
         
         # reverses dataframe if specified
         if reverse_df: df_temp = df_temp.reindex(index= df_temp.index[::-1]).reset_index(drop = True)
+        if fill_missing_dates: df_temp = self.fill_missing_dates(df_temp)
         if inplace: self.df = df_temp 
         return df_temp
     
