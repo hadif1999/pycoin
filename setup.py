@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 setup(
-    name='pycoin',
+    name='pythoncoin',
     version='v1.0.01',
     packages=['pycoin', 'pycoin/market_data_gathering', 'pycoin/market_data_kline_plots'],
     license="MIT",
