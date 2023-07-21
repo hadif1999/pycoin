@@ -19,7 +19,10 @@ you can also change your column name using some methods that will be discussed i
 
 Note: row indexes of your input dataframe must be integer not datetime or timestamp format.
 instead you must have a column named "datetime" that keeps time index of each row. 
-
+## Installation
+```bash
+pip install pythoncoin
+```
 ## Quick start
 
 after cloning the repo you can use these commands to make a market processing object:
