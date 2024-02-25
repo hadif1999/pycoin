@@ -6,18 +6,72 @@ from setuptools import setup
 from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
+short_description = """a pythonic algorithmic trading library, with focus on deploying 
+                    price based strategies and running multi strategies instances 
+                    on a single bot as a webapp"""
+
+
+plot = ['plotly>=4.0']
+
+ai = ["tensorflow",
+      'catboost; platform_machine != "aarch64"',
+      'xgboost',
+      'tensorboard']
+
+develop = [
+    'coveralls',
+    'mypy',
+    'ruff',
+    'pre-commit',
+    'pytest',
+    'pytest-asyncio',
+    'pytest-cov',
+    'pytest-mock',
+    'pytest-random-order',
+    'isort',
+    'time-machine',
+    'types-cachetools',
+    'types-filelock',
+    'types-requests',
+    'types-tabulate',
+    'types-python-dateutil'
+]
+
+jupyter = [
+    'jupyter',
+    'nbstripout',
+    'ipykernel',
+    'nbconvert',
+]
+
+test = [
+        'pytest',
+        'pytest-asyncio',
+        'pytest-cov',
+        'pytest-mock',
+        ]
+
+hdf5 = [
+    'tables',
+    'blosc',
+]
+
+
+all_extra = plot + develop + jupyter + ai
+
+with open(this_directory/"requirements.txt", "r") as reqs:
+    base_requirements = reqs.readlines()
 
 
 setup(
     name='pythoncoin',
-    version='v1.0.02',
-    packages=['pycoin', 'pycoin/market_data_gathering', 'pycoin/market_data_kline_plots'],
+    version='v2.0.00',
+    packages=['pycoin'],
     license="MIT",
     author='Hadi Fathipour',
     author_email="hadi9628983@gmail.com",
     url='https://github.com/hadif1999/pycoin',
-    description="a packege to make some algorithmic trading analyses easy.",
-    install_requires=['plotly', 'pandas', 'numpy', 'kucoin-python'],
+    description=short_description,
     long_description=long_description,
     long_description_content_type='text/markdown',
     classifiers=[
@@ -25,4 +79,14 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    tests_require=test, 
+    install_requires=base_requirements,
+    extras_require={
+        "plot":plot,
+        "ai":ai,
+        "plot":plot,
+        "jupyter":jupyter,
+        "hdf5":hdf5,
+        "all":all_extra }
+    
 )
