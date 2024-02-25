@@ -1,0 +1,1 @@
+from .platforms.bingx.bingx import Bingx
