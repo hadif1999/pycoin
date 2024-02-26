@@ -1,31 +1,25 @@
 # pycoin
-### a toobox wrriten to simplify some common alghorithmic trading processes.
-uses plotly package for visualization, python-kucoin for extracting data, ta to calculate indicators, also pandas and numpy( examples in example file)
+### a lovable data analysis and algorithmic trading library for cryptocurrencies
+including tools for deploying any strategies including pattern based strategies,
+price action strategies, indicator based strategies and also Machine learning based strategies. 
+able to run multi strategy instances on a single bot as a webapp and a lot more...
 ### what can this package do:
-1. download and extract market historical data for all symbols
-2. visualize market data as candlestick in a interactive way.
-3. able to add any shapes that are most used in market processing such as lines, circles, etc .
-4. can find market highs and lows accurately.
-5. can find market trend.
-6. you can use it to deploy many strategies such as indicator based, price action, etc (in development). 
-also machine learning based strategies will be added in future (in development).
-7. backtesting (in development)
-8. getting position (in development)
+1. download market historical data for all symbols from almost all exchanges thanks to ccxt.
+2. visualizing capabilities to easily analysis market.
+3. able to perform some useful analysis such as finding market trend according to market past high and lows, finding market important levels (like support and resistance) and more .
+4. able to define your strategy, backtest it, run it in dry run mode and also in real mode.
+5. using telegram bot and webapp to control and monitor your bot. (soon)  
+6. run multiple strategy instances for each user as a single bot (soon) 
 
-Note: many of the functions in this package works with standard column names, standard column names are:
-"open", "close", "high", "low", "volume", "datetime", "timestamp". 
-so it's better to change your market dataframe column names if they are not as the above format.
-you can also change your column name using some methods that will be discussed in examples.
+Note: for documentation please refer to examples folder.
 
-Note: row indexes of your input dataframe must be integer not datetime or timestamp format.
-instead you must have a column named "datetime" that keeps time index of each row. 
-## Installation
+## Install
 ```bash
-pip install pythoncoin
+!pip install pythoncoin
 ```
 ## Quick start
 
-after cloning the repo you can use these commands to make a market processing object:
+after installation you can run below:
 
 ```python 
 
