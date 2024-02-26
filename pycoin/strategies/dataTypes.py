@@ -1,4 +1,4 @@
-from typing import Literal, Union, Dict
+from typing import Literal
 
 PivotType = Literal["weekly", "monthly"]
 CandleType = Literal["bullish", "bearish"]

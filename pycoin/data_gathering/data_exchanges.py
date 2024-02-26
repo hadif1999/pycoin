@@ -1,6 +1,6 @@
 import ccxt 
 from freqtrade.data.converter import ohlcv_to_dataframe
-from .. import utils
+from pycoin import utils
 import datetime as dt
 
 

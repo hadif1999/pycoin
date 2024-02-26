@@ -2,18 +2,19 @@ import platform
 
 from attr import dataclass
 from tenacity import retry
-from ...data_gathering import Binance_KlineData
-from ...order_making import Bingx
+from pycoin import KlineData_Fetcher
+
+from pycoin.order_making import Bingx
 from backtesting import Backtest, backtesting, Strategy
 from backtesting._util import _Indicator as next_array
 import datetime as dt
 
-class SMA_Strategy(Binance_KlineData):
+class SMA_Strategy(object):
     
     active_positions = []
     
     def __init__(self, short_window:int, long_window:int, symbol:str, interval:str,
-                 platform:str = "bingx", start_datatime = dt.datetime|int = None ) -> None:
+                 platform:str = "bingx", start_datatime: dt.datetime|int = None ) -> None:
         """a simple SMA strategy, if short term sma is above long term sma get a long position,
         else get a short position with specified quantity, also TP and SL can be implemented,
         if arrived to a SL order it will close the whole position and wait until a opposite signal to enter.

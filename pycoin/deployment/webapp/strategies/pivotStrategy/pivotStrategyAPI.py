@@ -1,8 +1,8 @@
-from .. import celery_app
-from .pivotStrategyCore import runPivotStrategy
-from .._StrategyAPI_BASE import _STRATEGY_API
+from pycoin import celery_app
+from pycoin.deployment.webapp.strategies.pivotStrategy.pivotStrategyCore import runPivotStrategy
+from pycoin.deployment.webapp.strategies import _STRATEGY_API
 from typing import Annotated
-from ..strategiesDependencies import Run_PivotStrategy
+from pycoin.deployment.webapp.strategies import Run_PivotStrategy
 from fastapi import Depends
 
 

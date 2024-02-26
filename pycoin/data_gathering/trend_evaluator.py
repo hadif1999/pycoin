@@ -1,7 +1,7 @@
 
 
 import pandas as pd 
-from .indicators import calc_MAs
+from pycoin.data_gathering.indicators import calc_MAs
 from typing import List, Dict, Any
 from ta.trend import MACD
 import numpy as np

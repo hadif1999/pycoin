@@ -1,13 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
-from fastapi.responses import RedirectResponse, PlainTextResponse
-from pydantic import BaseModel
-from typing import Annotated
-import pandas as pd
-from . import dependencies 
-from starlette.datastructures import URL
+from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse
+from pycoin.deployment.webapp import dependencies 
 
 market_dep = dependencies.market_dependency
-
 router = APIRouter(prefix = "/positions", tags = ["positions"])
 
 @router.get("/")

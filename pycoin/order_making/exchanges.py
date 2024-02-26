@@ -1,5 +1,5 @@
 
 
-from . import Bingx
+from pycoin.order_making import Bingx
 
 exchanges = {Bingx.exchange: Bingx}

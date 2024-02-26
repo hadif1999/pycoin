@@ -1,7 +1,6 @@
-from ...data_gathering import Binance_KlineData
-import pandas as pd
-from ...order_making import Bingx
-from ._Levels_evaluator import _Levels
+from pycoin import KlineData_Fetcher
+from pycoin.order_making import Bingx
+from pycoin.strategies import _Levels
 import datetime as dt
 
 class Fract_Levels(_Levels):

@@ -9,10 +9,10 @@ from backtesting import Backtest
 from backtesting.backtesting import Strategy
 from bokeh.io import show, save
 import shutil as sh
-from ... import utils
-from ... import _StrategyBASE
-from ... import exchanges
-from ... import dataTypes
+from pycoin import utils
+from pycoin.strategies import _StrategyBASE
+from pycoin import exchanges
+from pycoin.strategies import dataTypes
 
 
 class Pivot_Strategy_BASE(_Levels):

@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, UploadFile
-from . import dependencies
-from typing import Annotated
+from fastapi import APIRouter, UploadFile
+from pycoin.deployment.webapp import dependencies
 from fastapi.responses import PlainTextResponse
 import os, json
 

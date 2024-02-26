@@ -1,6 +1,6 @@
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, Path
-from . import dependencies
+from fastapi import APIRouter, HTTPException, Path
+from pycoin.deployment.webapp import dependencies
 from typing import Annotated
 from fastapi.responses import PlainTextResponse
 

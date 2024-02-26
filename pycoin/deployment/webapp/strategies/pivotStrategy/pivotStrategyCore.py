@@ -1,6 +1,6 @@
-from .. import Run_PivotStrategy
-from .. import celery_app as app
-from ..strategiesDependencies import celeryTaskRetryPolicy_conf
+from pycoin.strategies import Run_PivotStrategy
+from pycoin import celery_app as app
+from pycoin.deployment.webapp.strategies import celeryTaskRetryPolicy_conf
 import time
 from celery.utils.log import get_task_logger
 

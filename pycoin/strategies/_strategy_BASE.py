@@ -1,8 +1,8 @@
 from typing import Literal
 from abc import ABC, abstractmethod
 import pandas as pd
-from .. import KlineData_Fetcher
-from .. import utils
+from pycoin import KlineData_Fetcher
+from pycoin import utils
 
 
 class _StrategyBASE:

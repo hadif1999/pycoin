@@ -1,6 +1,6 @@
 import sys
-from ...data_gathering import Binance_KlineData
-from ...order_making import Bingx
+from pycoin import KlineData_Fetcher 
+from pycoin.order_making import Bingx
 from backtesting import Backtest
 from backtesting._util import _Indicator as next_array
 from backtesting.backtesting import Strategy

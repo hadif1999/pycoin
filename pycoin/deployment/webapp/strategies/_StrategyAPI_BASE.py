@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends
 from . import celery_app
 from celery.canvas import Signature
 from typeguard import typechecked
-from .strategiesDependencies import Run_PivotStrategy
+from pycoin.strategies import Run_PivotStrategy
 from typing import Annotated
 
 

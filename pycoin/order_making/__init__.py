@@ -1,1 +1,1 @@
-from .platforms.bingx.bingx import Bingx
+from pycoin.order_making.platforms.bingx.bingx import Bingx

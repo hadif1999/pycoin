@@ -1,6 +1,6 @@
 import os
 from fastapi import File, UploadFile, Depends
-from ...order_making import Bingx
+from pycoin.order_making import Bingx
 from typing import Annotated, Any
 
 

@@ -2,17 +2,17 @@ import os
 from typing import Literal
 
 import pandas as pd
-from .._Levels_evaluator import _Levels
+from pycoin.strategies.level_based_strategies import _Levels
 import datetime as dt
 import numpy as np
 from backtesting import Backtest
 from backtesting.backtesting import Strategy
 from bokeh.io import show, save
 import shutil as sh
-from ... import utils
-from ... import _strategy_BASE
-from ....order_making.exchanges import exchanges
-from ... import dataTypes
+from pycoin import utils
+from pycoin.strategies import _strategy_BASE
+from pycoin.order_making.exchanges import exchanges
+from pycoin.strategies import dataTypes
 
 
 

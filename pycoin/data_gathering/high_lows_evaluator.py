@@ -1,11 +1,10 @@
 import pandas as pd
 import sys
-sys.setrecursionlimit(10000)
+sys.setrecursionlimit(1000)
 import numpy as np
 import datetime as dt
-from typing import List
 from scipy.signal import argrelextrema
-from .trend_filters import fill_between_pivots, remove_less_than_min_time
+from pycoin.data_gathering.trend_filters import fill_between_pivots, remove_less_than_min_time
 
 
 SUGGESTED_CANDLE_RANGE = {

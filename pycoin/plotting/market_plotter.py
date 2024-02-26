@@ -3,8 +3,8 @@ import datetime as dt
 import plotly.graph_objects as go
 from typing import List
 from typing import Any
-from ..data_gathering.high_lows_evaluator import get_market_High_Lows
-from .. import utils
+from pycoin.data_gathering import get_market_High_Lows
+from pycoin.utils import utils
 
 
 
