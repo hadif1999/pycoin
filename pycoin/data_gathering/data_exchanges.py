@@ -11,10 +11,10 @@ def KlineData_Fetcher(symbol: str, timeframe: str, data_exchange:str|None = None
                       limit:int = 1000, fill_missing: bool = True, 
                       drop_incomplete: bool = True, datetime_index: bool = True):
     
-    data_exchange = data_exchange.lower()
-    assert data_exchange in Data_Exchanges.keys(), f"exchange not found current exchanges: {list(Data_Exchanges.keys())}"
-    data_fetcher = Data_Exchanges.get(data_exchange, None) or ccxt_exchange.fetch_ohlcv
-    assert not isinstance(data_fetcher, None), "'ccxt_exchange' or 'data_exchange' must have value"
+    
+    if not data_exchange and not ccxt_exchange: raise ValueError("'ccxt_exchange' or 'data_exchange' must have value")
+    if data_exchange: assert data_exchange in Data_Exchanges.keys(), f"exchange not found, current exchanges: {list(Data_Exchanges.keys())}"
+    data_fetcher = Data_Exchanges.get(data_exchange.lower(), None) or ccxt_exchange.fetch_ohlcv
     ohlcv = data_fetcher(symbol=symbol, timeframe=timeframe,
                          since=None, limit=limit)
     all_ohlcv = []
