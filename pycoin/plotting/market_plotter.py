@@ -4,21 +4,17 @@ import plotly.graph_objects as go
 from typing import List
 from typing import Any
 from pycoin.data_gathering import get_market_High_Lows
-from pycoin.utils import utils
+from pycoin import Utils
 
 
 
 class Market_Plotter: 
         
-    def __init__(self, OHLCV_df:pd.DataFrame, symbol:str|None = None, 
-                 freq:str|None = None, exchange:str = None) -> None:
+    def __init__(self, OHLCV_df:pd.DataFrame) -> None:
         
         self.df = OHLCV_df
-        self.symbol = symbol
-        self.freq = self.interval = freq
-        self.exchange = self.platform = self.market = exchange
         
-        utils.check_isStandard_OHLCV_dataframe(OHLCV_df)
+        Utils.check_isStandard_OHLCV_dataframe(OHLCV_df)
         self.fig = self.empty_figure()
 
     
@@ -63,12 +59,12 @@ class Market_Plotter:
         dataframe = self.df.copy()
         
         if plot_by_grp:
-            dataframe = utils.GetByGroup_klines(dataframe, grp = grp)
+            dataframe = Utils.GetByGroup_klines(dataframe, grp = grp)
             
         candleStick_data = self.df2candlestick(dataframe, OPEN = kwargs.get("OPEN", "Open"), 
                             CLOSE = kwargs.get("CLOSE", "Close"), HIGH=kwargs.get("HIGH", "High"),
                             LOW = kwargs.get("LOW", "Low"), 
-                            name = kwargs.get("name",f"{self.exchange=}|{self.symbol=},candlestick"))
+                            name = kwargs.get("name",f"{self.df.Name},candlestick"))
 
         fig = go.Figure(  data = [candleStick_data] )
         
@@ -80,8 +76,8 @@ class Market_Plotter:
         assert isinstance(fig_size, list), " 'fig_size' must be a 2 element list"
         
         fig.update_layout(
-                          title = f"{self.platform}|{self.symbol}|{self.interval}, date ->from: {dataframe.index[0]}  to: {dataframe.index[-1]}",
-                          yaxis_title = f"{self.platform}|{self.symbol}|{self.interval}",
+                          title = f"{self.df.Name}, date ->from: {dataframe.index[0]}  to: {dataframe.index[-1]}",
+                          yaxis_title = f"{self.df.Name}",
                           xaxis_rangeslider_visible = slider,
                           width = fig_size[0], height = fig_size[1],
                           dragmode = "pan", margin=dict(l=15, r=10, t=35, b=12)
@@ -356,8 +352,8 @@ class Market_Plotter:
             for i,row in grp.iterrows():
                 self.highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
                 
-        fig.update_layout( title = f"{self.symbol}: {self.interval} - {self.platform}, trend evaluated with: {column}",
-                          yaxis_title = self.symbol
+        fig.update_layout( title = f"{self.df.Name}, trend evaluated with: {column}",
+                          yaxis_title = self.df.Name
                          )
         return fig
         
@@ -403,8 +399,8 @@ class Market_Plotter:
             self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
 
         fig.update_layout(
-                          title = f"{self.symbol}: {self.interval}-{self.platform}, date -> from: {self.df.datetime.iloc[0]}   to: {self.df.datetime.iloc[-1]}",
-                          yaxis_title = self.symbol
+                          title = f"{self.df.Name}, date -> from: {self.df.index[0]}   to: {self.df.index[-1]}",
+                          yaxis_title = self.df.Name
                          )
                     
         if return_only_shapes: return fig.layout.shapes

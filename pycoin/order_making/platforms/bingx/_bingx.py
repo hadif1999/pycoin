@@ -1,7 +1,7 @@
 import os, json, hmac, time, requests
 from typing import Any
 from hashlib import sha256
-from ....utils.utils import current_time
+from ....Utils import current_time
 from ...API_manager import API_MANAGER
 from typeguard import typechecked
 from typing import List, Dict

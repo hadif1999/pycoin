@@ -9,7 +9,7 @@ from backtesting import Backtest
 from backtesting.backtesting import Strategy
 from bokeh.io import show, save
 import shutil as sh
-from pycoin import utils
+from pycoin import Utils
 from pycoin.strategies import _strategy_BASE
 from pycoin.order_making.exchanges import exchanges
 from pycoin.strategies import dataTypes
@@ -74,7 +74,7 @@ class Pivot_Strategy_BASE(_Levels):
         self.all_pivots = self.weekly_pivots if self.pivots_type == "weekly" \
         else self.monthly_pivots
         
-        self.df_lastPivots = get_by_datetimeRange(dataframe = self.df ,
+        self.df_lastPivots = Utils.get_by_datetimeRange(dataframe = self.df ,
                                                   start = self.all_pivots.iloc[-1].datetime) 
         
         
@@ -221,7 +221,7 @@ class Pivot_Strategy_BASE(_Levels):
         dfPivot_pair = []
         for i, row in self.all_pivots.iterrows():
             
-            pivot_df = get_by_datetimeRange(df_, start = row.datetime,
+            pivot_df = Utils.get_by_datetimeRange(df_, start = row.datetime,
                                             end = None 
                                             if i == self.all_pivots.index[-1] 
                                             else self.all_pivots.iloc[i+1].datetime)
@@ -782,7 +782,7 @@ class _PivotStrategy_Backtesting:
                 self.i +=1
                 
                 
-        bt = Backtest(case_col_names(to_datetime_index(df_)),
+        bt = Backtest(Utils.case_col_names(Utils.to_datetime_index(df_)),
                         Pivot_StrategyBacktest,
                         cash = init_cash, 
                         commission = broker_fee,

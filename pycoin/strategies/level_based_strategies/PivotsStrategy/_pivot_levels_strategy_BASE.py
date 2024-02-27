@@ -9,7 +9,7 @@ from backtesting import Backtest
 from backtesting.backtesting import Strategy
 from bokeh.io import show, save
 import shutil as sh
-from pycoin import utils
+from pycoin import Utils
 from pycoin.strategies import _StrategyBASE
 from pycoin import exchanges
 from pycoin.strategies import dataTypes
@@ -76,7 +76,7 @@ class Pivot_Strategy_BASE(_Levels):
         print("\n\nfetching Pivots data...")
         super().update_pivots        
         ## dataframe correspanding to last pivot
-        self.df_lastPivots = utils.get_by_datetimeRange(dataframe = self.df ,
+        self.df_lastPivots = Utils.get_by_datetimeRange(dataframe = self.df ,
                                                   start = self.Pivots[self.PivotsType].index[-1])
         print("done")
         self.add_PivotDatetime_to_dataframe(self.df, col_name="PivotDatetime", inplace=True)
@@ -153,11 +153,11 @@ class Pivot_Strategy_BASE(_Levels):
         pivots_dict = self._find_nearest_pivots(Price or self.LastClose)
         match candle_type.lower():
             case "bullish":
-                return {pivot_name: utils.getBulish_CrossedPrice(df_, pivot) 
+                return {pivot_name: Utils.getBulish_CrossedPrice(df_, pivot) 
                         for pivot_name, pivot in pivots_dict.items()}
                 
             case "bearish":
-                return {pivot_name: utils.getBearish_CrossedPrice(df_, pivot)
+                return {pivot_name: Utils.getBearish_CrossedPrice(df_, pivot)
                         for pivot_name, pivot in pivots_dict.items()} 
                 
             case _ : 
@@ -195,8 +195,8 @@ class Pivot_Strategy_BASE(_Levels):
             C1_df, C2_df = C1_dict[levelName], C2_dict[levelName]
             C1_df["Datetime"], C2_df["Datetime"] = C1_df.index, C2_df.index
             # adding suffix to C1,C2 col names to identify them easily
-            C1_df = utils.add_to_ColumnNames(C1_df.copy(), suffix = c1)
-            C2_df = utils.add_to_ColumnNames(C2_df.copy(), suffix = c2)
+            C1_df = Utils.add_to_ColumnNames(C1_df.copy(), suffix = c1)
+            C2_df = Utils.add_to_ColumnNames(C2_df.copy(), suffix = c2)
             ## first concat to add indices
             C1C2_df = pd.concat([C1_df, C2_df], axis = 1)
             # shifting C1 part to align indexes and removing empty rows
@@ -204,8 +204,8 @@ class Pivot_Strategy_BASE(_Levels):
             C1C2_df = pd.concat([shifted_C1_df, C2_df], axis = 1).dropna().copy()
             ## reverting column names to their initial names
             _C1_df, _C2_df = C1C2_df[C1_colNames], C1C2_df[C2_colNames]
-            _C1_df = utils.remove_from_ColumnNames(_C1_df, suffix = c1)
-            _C2_df = utils.remove_from_ColumnNames(_C2_df, suffix = c2)
+            _C1_df = Utils.remove_from_ColumnNames(_C1_df, suffix = c1)
+            _C2_df = Utils.remove_from_ColumnNames(_C2_df, suffix = c2)
             # making a list of dicts with C1 and C2 keys
             C1C2_candles[levelName] = [{"C1":C1[1].to_dict(), "C2":C2[1].to_dict()} 
                                        for C1, C2 in zip(_C1_df.iterrows(), _C2_df.iterrows())]
@@ -324,7 +324,7 @@ class Pivot_Strategy_BASE(_Levels):
                                            dataframe: pd.DataFrame = pd.DataFrame()):
         candleType_col = "CandleType"
         df_ = (self.df if dataframe.empty else dataframe).copy()
-        df_[candleType_col] = utils.add_candleType(df_)
+        df_[candleType_col] = Utils.add_candleType(df_)
         all_C1C2s = []
         for C1C2 in C1C2s:
             C1, C2 = C1C2["C1"], C1C2["C2"]

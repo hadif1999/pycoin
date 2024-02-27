@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from pathlib import Path
 this_directory = Path(__file__).parent
@@ -67,7 +67,7 @@ with open(this_directory/"requirements.txt", "r") as reqs:
 setup(
     name='pythoncoin',
     version='v2.0.00',
-    packages=['pycoin'],
+    packages=find_packages(),
     license="MIT",
     author='Hadi Fathipour',
     author_email="hadi9628983@gmail.com",

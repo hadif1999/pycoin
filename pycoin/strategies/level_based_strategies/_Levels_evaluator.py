@@ -2,7 +2,6 @@ from typing import Any
 import pandas as pd
 import datetime as dt
 from pycoin.data_gathering import get_market_High_Lows
-import datetime as dt
 from pycoin.strategies import dataTypes, _StrategyBASE
 
 

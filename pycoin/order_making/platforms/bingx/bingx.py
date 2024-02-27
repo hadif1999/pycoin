@@ -1,7 +1,7 @@
 
 from .._base import _BASE
 from ._bingx import _Bingx
-from asyncer import asyncify, syncify
+from asyncer import asyncify
 
 
 
