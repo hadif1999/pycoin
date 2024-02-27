@@ -46,7 +46,8 @@ class Pivot_Strategy_BASE(_Levels):
         """
         
         super().__init__(symbol = symbol, interval = interval,  start_time = start_time,
-                         freq = interval, data_exchange = data_exchange, **kwargs)
+                         freq = interval, data_exchange = data_exchange,
+                         PivotsType = pivots_type.lower(), **kwargs)
         
         
         _API_KEY = os.environ.get("API_KEY", API_key) if read_APIkeys_fromEnv else API_key
@@ -97,7 +98,6 @@ class Pivot_Strategy_BASE(_Levels):
             if isinstance(next_datetime, pd.NaT.__class__): next_datetime = None
             if not df_.loc[datetime: next_datetime].empty:
                 df_.loc[datetime: next_datetime, col_name] = datetime
-        
         df_[col_name] = pd.to_datetime(df_[col_name])
         if inplace: self.df = df_
         return df_

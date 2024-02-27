@@ -56,9 +56,27 @@ class _Levels( _StrategyBASE):
         
         self.LastPivots["weekly"] = weekly_pivots.iloc[-1].to_dict()
         self.LastPivots["monthly"] = monthly_pivots.iloc[-1].to_dict()
-        
-        
         return self.Pivots
+    
+    
+    def add_PivotDatetime_to_dataframe(self, dataframe: pd.DataFrame = pd.DataFrame(), 
+                                       col_name:str = "PivotDatetime", inplace = False):
+        df_, df_.Name = ((self.df.copy(), self.df.Name) if dataframe.empty
+               else (dataframe.copy(), dataframe.Name))
+        pivots = self.Pivots[self.PivotsType]
+        dt_ser = pd.Series(pivots.index)
+        df_[col_name] = None
+        for val, next_val in zip(dt_ser.items(), dt_ser.shift(-1).items()):
+            _, datetime = val
+            _, next_datetime = next_val
+            if isinstance(next_datetime, pd.NaT.__class__): next_datetime = None
+            if not df_.loc[datetime: next_datetime].empty:
+                df_.loc[datetime: next_datetime, col_name] = datetime
+        
+        df_[col_name] = pd.to_datetime(df_[col_name])
+        if inplace: self.df = df_
+        return df_
+        
         
         
             
@@ -261,10 +279,11 @@ class _Levels( _StrategyBASE):
         if self.Pivots[which_pivot.lower()].empty:
             raise ValueError("pivots didn't evaluated yet!")
         else: pivots_df:pd.Series = self.Pivots[which_pivot.lower()]
-        assert pivotsDate_col in df_.columns, f"column {pivotsDate_col} not found"
+        
+        if not pivotsDate_col in df_.columns:
+            df_ = self.add_PivotDatetime_to_dataframe(df_, pivotsDate_col)
          
-        plots = Market_Plotter(df_, self.symbol,
-                               self.interval, self.data_exchange)  
+        plots = Market_Plotter(df_)  
               
         if not fig: fig = plots.plot_market(plot_by_grp = False)
         lastPivot_endDate = None
