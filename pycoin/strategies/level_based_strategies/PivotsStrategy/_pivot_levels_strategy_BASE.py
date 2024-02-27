@@ -10,7 +10,7 @@ from backtesting.backtesting import Strategy
 from bokeh.io import show, save
 import shutil as sh
 from pycoin import Utils
-from pycoin.strategies import _StrategyBASE
+from pycoin.strategies._strategy_BASE import _StrategyBASE
 from pycoin import exchanges
 from pycoin.strategies import dataTypes
 

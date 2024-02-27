@@ -1,4 +1,4 @@
-from pycoin.strategies import Pivot_Strategy_BASE
+from . import Pivot_Strategy_BASE
 from time import time, sleep
 from pycoin.risk_management.eval_leverage_amount import Leverage_Amount
 from typeguard import typechecked

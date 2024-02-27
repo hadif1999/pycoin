@@ -2,7 +2,8 @@ from typing import Any
 import pandas as pd
 import datetime as dt
 from pycoin.data_gathering import get_market_High_Lows
-from pycoin.strategies import dataTypes, _StrategyBASE
+from pycoin.strategies import dataTypes
+from pycoin.strategies._strategy_BASE import _StrategyBASE
 
 
 class _Levels( _StrategyBASE):
@@ -57,7 +58,7 @@ class _Levels( _StrategyBASE):
         self.LastPivots["monthly"] = monthly_pivots.iloc[-1].to_dict()
         
         
-        return self
+        return self.Pivots
         
         
             
@@ -73,13 +74,14 @@ class _Levels( _StrategyBASE):
             pd.dataframe: pivot levels for each row of input dataframe (candlesticks)
         """        
         df_ = df.copy()
+        df_.Name = df.Name
         df_["mean"] = df_[["High", "Low"]].mean(axis = 1)
         df_["75%"] = df_[["High", "mean"]].mean(axis = 1)
         df_["25%"] = df_[["mean", "Low"]].mean(axis = 1)
         return df_[["Low","25%","mean","75%","High"]]
 
 
-    def _eval_range_of_high_lows(self, candle_ranges:range = range(100,200,20)):
+    def _eval_range_of_high_lows(self, candle_ranges:range = range(100,200,20), **kwargs):
         """evaluates market high and lows but for a range of candles. it gathers high and lows for
         each candle range and returns their price in a list.
 
@@ -92,13 +94,15 @@ class _Levels( _StrategyBASE):
         """        
         
         all_high_lows = []
+        colName = kwargs.get("colName", "Pivot")
         
         for range in candle_ranges:
             
-            maxs, mins = get_market_High_Lows(self.df,
-                                              candle_range = range)
-            all_mins = self.df.iloc[mins]["Low"].values.reshape(-1,1)[:,0].tolist()
-            all_maxs = self.df.iloc[maxs]["High"].values.reshape(-1,1)[:,0].tolist()
+            df = get_market_High_Lows(self.df, candle_range = range, colName=colName)
+            pivots_grp = df.groupby(colName)
+            high_ser, low_ser = pivots_grp.get_group(1)["High"], pivots_grp.get_group(-1)["Low"]
+            all_mins = low_ser.values.reshape(-1,1)[:,0].tolist()
+            all_maxs = high_ser.values.reshape(-1,1)[:,0].tolist()
             all_high_lows = all_high_lows + all_mins + all_maxs 
         list(set(all_high_lows))
         all_high_lows.sort()
@@ -222,8 +226,7 @@ class _Levels( _StrategyBASE):
             raise ValueError("fracts levels didn't evaluated, first run eval_Fract_levels func")
         from ...plotting.market_plotter import Market_Plotter
         
-        plots = Market_Plotter(self.df, self.symbol, self.interval, 
-                               self.data_exchange)
+        plots = Market_Plotter(self.df)
         fig = plots.plot_market(plot_by_grp=False)
         for frac in self.fracts:
             plots.draw_static_line(fig, "h",frac, kwargs.get("color","purple"), 
@@ -248,7 +251,9 @@ class _Levels( _StrategyBASE):
         from ...plotting.market_plotter import Market_Plotter
         which_pivot = which_pivot.lower()
         
-        df_ = (self.df if dataframe.empty else dataframe).copy()
+        df_, df_.Name = ((self.df.copy(), self.df.Name) if dataframe.empty 
+                         else (dataframe.copy(),dataframe.Name))
+        
         
         if which_pivot.lower() not in ["weekly", "monthly"]:
             raise ValueError("which_pivot arg can be 'monthly' or 'weekly'.")
