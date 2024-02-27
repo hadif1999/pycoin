@@ -45,10 +45,13 @@ class Trend_Evaluator():
             _type_: _description_
         """           
         df_ = dataframe.copy()
-        highs_ind, lows_ind = get_market_High_Lows(df_, candle_range=HighLow_range, **kwargs )
-        max_idx, min_idx = highs_ind, lows_ind
+        df_.Name = dataframe.Name
+        df_ = get_market_High_Lows(df_, candle_range=HighLow_range, **kwargs )
         df_[trend_col_name] = side_trend_label
+        if "Datetime" not in df_.columns: df_["Datetime"] = df_.index
         df_.reset_index(drop = True, inplace = True)
+        HighLows_grp = df_.groupby( kwargs.get("colName", "Pivot"))
+        max_idx, min_idx = HighLows_grp.get_group(1).index, HighLows_grp.get_group(-1).index
         
         if not isinstance(remove_less_than_n_candles, int): 
             raise "remove_less_than_n_candles can be int"
@@ -101,12 +104,13 @@ class Trend_Evaluator():
                                         side_trend_label = side_trend_label,
                                         fill_side_between_same = fill_side_between_same_trends,
                                         fill_other_between_same=False)                  
-        return df_[trend_col_name]
+        df_.set_index("Datetime", inplace=True)
+        return df_
     
     
     
     
-    def eval_trend_with_MAs(dataframe, column:str = "close" ,windows:List = [50,200], drop_MA_cols:bool = False,
+    def eval_trend_with_MAs(dataframe, column:str = "Close" ,windows:List = [50,200], drop_MA_cols:bool = False,
                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0,
                             inplace:bool = True,
                             trend_col_name:str = "MA_trend"):
@@ -117,7 +121,7 @@ class Trend_Evaluator():
         
 
         Args:
-            column (str, optional): _description_. Defaults to "close".
+            column (str, optional): _description_. Defaults to "Close".
             windows (List, optional): _description_. Defaults to [50,200].
             drop_MA_cols (bool, optional): drop calculated MA cols after calculation or not. Defaults to False.
             up_trends_as (int, optional): label of up_trend values. Defaults to 1.
@@ -133,9 +137,11 @@ class Trend_Evaluator():
         elif windows[0] == windows[1]: raise Exception("short and long term windows can't be equal!")
         
         df_ = dataframe.copy()
+        df_.Name = dataframe.Name
         df_.index.name = ''
                     
         df_with_MA = calc_MAs(df_, column = column, windows = windows)
+        df_with_MA.Name = dataframe.Name
         
         up_trends = df_with_MA.query(f"MA{str(windows[0])} > MA{str(windows[1])}").copy()
         down_trends = df_with_MA.query(f"MA{str(windows[0])} < MA{str(windows[1])}").copy()
@@ -150,18 +156,19 @@ class Trend_Evaluator():
                                      inplace= True)
         
         overall_trend = labeled_df[trend_col_name].iloc[-1]
-        return labeled_df[trend_col_name]
+        return labeled_df
     
     
 
 
-    def eval_trend_with_MACD(dataframe,* , column:str = "close", window_slow:int = 26 , 
+    def eval_trend_with_MACD(dataframe,* , column:str = "Close", window_slow:int = 26 , 
                              window_fast:int = 12, window_sign:int = 9 , fill_na:bool = False,
                              drop_MACD_col:bool = False, up_trends_as = 1,
                              down_trends_as = -1, side_trends_as = 0,
                              trend_col_name:str = 'MACD_trend'):
         
         df_ = dataframe.copy()
+        df_.Name = dataframe.Name
         # calculating MACD
         macd = MACD(close = df_[column], window_slow = window_slow , window_fast = window_fast,
                     window_sign = window_sign, fillna = fill_na,)
@@ -174,15 +181,16 @@ class Trend_Evaluator():
         
         if drop_MACD_col : df_.drop(['signal_line','MACD','MACD_diff'], axis = 1, inplace = True)
         overall_trend = df_[trend_col_name].iloc[-1]
-        return df_[trend_col_name]
+        return df_
     
     
     
-    def eval_trend_with_ROC(dataframe,* , column:str = "close" ,nperiods:int = 14, drop_ROC:bool = False, 
+    def eval_trend_with_ROC(dataframe,* , column:str = "Close" ,nperiods:int = 14, drop_ROC:bool = False, 
                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0, 
                             trend_col_name:str = 'ROC_trend'):
         
         df_ = dataframe.copy()
+        df_.Name = dataframe.Name
         df_['ROC'] = ((df_[column] - df_[column].shift(nperiods)) / df_[column].shift(nperiods)) * 100
         # Fill missing values with 0
         df_['ROC'].fillna(0, inplace=True)
@@ -193,7 +201,7 @@ class Trend_Evaluator():
         # Get the overall trend based on the last row
         overall_trend = df_[trend_col_name].iloc[-1]
         if drop_ROC : df_.drop("ROC", axis = 1 , inplace = True)
-        return df_[trend_col_name] 
+        return df_
     
     
     

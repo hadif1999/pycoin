@@ -15,6 +15,10 @@ class Market_Plotter:
         self.df = OHLCV_df
         
         Utils.check_isStandard_OHLCV_dataframe(OHLCV_df)
+        
+        newInd = self.df.index.strftime("%Y-%m-%d %H:%M:%S")
+        newInd = pd.to_datetime(newInd)
+        self.df.set_index(newInd, inplace = True)
         self.fig = self.empty_figure()
 
     
@@ -57,14 +61,12 @@ class Market_Plotter:
                     size: size of figure 
         """        
         dataframe = self.df.copy()
+        dataframe.Name = self.df.Name
         
         if plot_by_grp:
             dataframe = Utils.GetByGroup_klines(dataframe, grp = grp)
             
-        candleStick_data = self.df2candlestick(dataframe, OPEN = kwargs.get("OPEN", "Open"), 
-                            CLOSE = kwargs.get("CLOSE", "Close"), HIGH=kwargs.get("HIGH", "High"),
-                            LOW = kwargs.get("LOW", "Low"), 
-                            name = kwargs.get("name",f"{self.df.Name},candlestick"))
+        candleStick_data = self.df2candlestick(dataframe, **kwargs)
 
         fig = go.Figure(  data = [candleStick_data] )
         
@@ -264,6 +266,7 @@ class Market_Plotter:
             increase_color (str, optional): color of increasing candles. Defaults to "lightblue".
         """        
         df_ = self.df.copy()
+        df_.Name = self.df.Name
         df_temp = df_.loc[ from_time : to_time ]
         
         highlight_candle = self.df2candlestick(df_temp, name = "highlight", increase_color = increase_color,
@@ -313,7 +316,7 @@ class Market_Plotter:
     
     
     def draw_trend_highlight(self, column:str = "MA_trend",
-                            dataframe:pd.DataFrame = None, * ,
+                            dataframe:pd.DataFrame = pd.DataFrame(), * ,
                             up_trend_color:str = "blue",
                             down_trend_color:str = "red",
                             side_trend_color:str = "yellow" , 
@@ -330,18 +333,27 @@ class Market_Plotter:
             down_trend_color (str, optional): color of down_trend candles. Defaults to "red".
             side_trend_color (str, optional): color of side_trend candles. Defaults to "yellow".
         """        
-        self.update_params
+        
         fig = self.empty_figure(fig_size = kwargs.get("fig_size",[1100,600]),
                                 slider = kwargs.get("slider",False))
         
+        if dataframe.empty: 
+            df_ = self.df.copy()
+            df_.Name = self.df.Name
+        else: 
+            df_ = dataframe.copy()
+            df_.Name = dataframe.Name
+            
+            
         if add_high_lows_shapes:
-            shapes = self.plot_high_lows(return_only_shapes = True, R = kwargs.get("R",1000),
-                                         y_scale= kwargs.get("y_scale",0.1))
+            shapes = self.plot_high_lows(dataframe = df_,
+                                        return_only_shapes = True,
+                                        R = kwargs.get("R",1000),
+                                        y_scale= kwargs.get("y_scale",0.1))
             fig.layout.shapes = shapes        
         
-        try: df_ = dataframe.copy()
-        except: df_ = self.df.copy()
-            
+        
+        if "Datetime" not in df_.columns: df_["Datetime"] = df_.index
         trend_grps = df_.copy().groupby(column, sort = True)
         
         colors = [down_trend_color , side_trend_color , up_trend_color]
@@ -350,8 +362,7 @@ class Market_Plotter:
           
         for name,grp in trend_grps :
             for i,row in grp.iterrows():
-                self.highlight_single_candle(fig, row["datetime"], color = colors_dict[name] )
-                
+                self.highlight_single_candle(fig, row["Datetime"], color = colors_dict[name] )
         fig.update_layout( title = f"{self.df.Name}, trend evaluated with: {column}",
                           yaxis_title = self.df.Name
                          )
@@ -360,7 +371,8 @@ class Market_Plotter:
         
         
     
-    def plot_high_lows(self, min_color:str = "red", max_color:str = "green" ,
+    def plot_high_lows(self, dataframe: pd.DataFrame, HighLows_col = "Pivot" ,
+                       min_color:str = "red", max_color:str = "green" ,
                         R:int = 400, y_scale:float = 0.1, *, 
                         return_only_shapes:bool = False, **kwargs):
         """adds circle shapes for highs and lows for visualizing.
@@ -375,8 +387,6 @@ class Market_Plotter:
         Raises:
             ValueError: _description_
         """        
-        
-        self.update_params
 
         fig = self.plot_market(
                                  plot_by_grp = False,
@@ -384,18 +394,17 @@ class Market_Plotter:
                                  slider = kwargs.get("slider",False)
                                 )
         
-        if not self.highs_df or not self.lows_df: 
-            # raise ValueError("""you didn't calculate highs and lows yet!
-            #                     do this by running obj.get_market_high_lows method.""")
-            df_ = self.market_obj.df.copy()
-            max_idxs, min_idxs = get_market_High_Lows(df_, **kwargs)
-            self.highs_df = df_.iloc[max_idxs][["datetime", "high"]].values.tolist()
-            self.lows_df = df_.iloc[min_idxs][["datetime", "low"]].values.tolist()
+        df_ = dataframe.copy()
+        df_.Name = dataframe.Name
+        if "Datetime" not in df_.columns: df_["Datetime"] = df_.index
+        highlows_grp = df_.groupby(HighLows_col)
+        highs = highlows_grp.get_group(1)[["Datetime","High"]].values.tolist()
+        lows = highlows_grp.get_group(-1)[["Datetime","Low"]].values.tolist()
             
-        for low_coord in self.lows_df:
+        for low_coord in lows:
             self.draw_circle(fig = fig, center = low_coord, R = R , fillcolor = min_color , y_scale = y_scale )
             
-        for high_coord in self.highs_df:
+        for high_coord in highs:
             self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
 
         fig.update_layout(
@@ -404,7 +413,7 @@ class Market_Plotter:
                          )
                     
         if return_only_shapes: return fig.layout.shapes
-        else: return fig
+        return fig
         
     
         

@@ -105,6 +105,7 @@ def fill_between_trends(df:pd.DataFrame , rm_below_ncandles:int = 10,
             _type_: _description_
         """            
         df_ = df.copy()
+        df_.Name = df.Name
         grps = df_.groupby(trend_col, sort = True).groups
         ncandles = rm_below_ncandles
         

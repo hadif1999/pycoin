@@ -18,7 +18,8 @@ def get_market_High_Lows(dataframe:pd.DataFrame,
                          high_col:str = "High", low_col:str = "Low", datetime_col:str = "Datetime",
                          min_time_dist:list = dt.timedelta(hours= 13),
                          fill_between_two_same:bool = True,
-                         remove_under_min_time_dist:bool = True ):
+                         remove_under_min_time_dist:bool = True,
+                         colName = "Pivot"):
     """this function evaluates input market highs, lows. and returns their index. 
 
     Args:
@@ -39,14 +40,15 @@ def get_market_High_Lows(dataframe:pd.DataFrame,
         max_idx (list): indices of highs
     """        
     df_ = dataframe.copy()
+    df_.Name = dataframe.Name
     if datetime_col not in df_.columns: df_[datetime_col] = df_.index
     df_.reset_index(inplace = True, drop = True)
     if not candle_range: raise ValueError("'candle_range' can't be None")
     # evaluating min and max from argrelextrema function which finds high and lows
-    max_idx = argrelextrema(data = np.array(df_[high_col].values.tolist()), 
-                            comparator= np.greater, order = candle_range, mode = mode )[0]
-    min_idx = argrelextrema(data = np.array(df_[low_col].values.tolist()), 
-                            comparator= np.less, order = candle_range , mode = mode )[0]
+    max_idx = argrelextrema(data = df_[high_col].values, comparator= np.greater,
+                            order = candle_range, mode = mode )[0]
+    min_idx = argrelextrema(data = df_[low_col].values, comparator= np.less,
+                            order = candle_range , mode = mode )[0]
     max_idx = max_idx.tolist()
     min_idx = min_idx.tolist()
     ### filtering and filling between high and lows with added functions       
@@ -60,7 +62,13 @@ def get_market_High_Lows(dataframe:pd.DataFrame,
     if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_, high_col,low_col)
     max_idx.sort()
     min_idx.sort()
-    return max_idx, min_idx
+    
+    highs_inds, lows_inds = df_.iloc[max_idx].index, df_.iloc[min_idx].index
+    df_.loc[highs_inds, colName] = 1
+    df_.loc[lows_inds, colName] = -1
+    df_[colName] = df_[colName].fillna(0)
+    df_.set_index("Datetime", inplace = True)
+    return df_
     
 
            
