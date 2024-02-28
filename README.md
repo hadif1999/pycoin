@@ -7,9 +7,9 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 - [x] download market historical data for all symbols from almost all exchanges thanks to [ccxt](https://github.com/ccxt/ccxt) :chart_with_upwards_trend: 
 - [x] visualizing capabilities to easily analyze market using [plotly](https://github.com/plotly/plotly.py) :mag:
 - [x] able to perform some useful analysis such as finding market trend according to market past high and lows, finding market important levels (like support and resistance) and more :bar_chart:
-- [] able to define your strategy, backtest it, run it in dry run mode and also in real mode :robot: (soon)
-- [] using telegram bot and webapp to control and monitor your bot. (soon)  
-- [] run multiple strategy instances for each user as a single bot. (soon) 
+- [ ] able to define your strategy, backtest it, run it in dry run mode and also in real mode :robot: (soon)
+- [ ] using telegram bot and webapp to control and monitor your bot. (soon)  
+- [ ] run multiple strategy instances for each user as a single bot. (soon) 
 
 >[!NOTE]
 >for usage examples please go to [examples] (examples) folder and open provided notebooks.
