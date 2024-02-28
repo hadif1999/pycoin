@@ -16,9 +16,16 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 
 ## Installation
 #### using pip
+##### standard installation
 ```bash
 !pip install pythoncoin
 ```
+##### installation to use extra features
+```bash 
+!pip install pythoncoin[plot] 
+```
+also you can use [ai], [jupyter], [hdf5] or [all] to install all extra packages
+
 #### via cloning
 ```bash
 git clone git@github.com:hadif1999/pycoin.git

@@ -81,7 +81,6 @@ setup(
     extras_require={
         "plot":plot,
         "ai":ai,
-        "plot":plot,
         "jupyter":jupyter,
         "hdf5":hdf5,
         "all":all_extra},
