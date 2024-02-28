@@ -1,4 +1,4 @@
-![pycoin](https://github.com/hadif1999/pycoin/blob/master/pics/pycoin_logo_raw_nobg.png?raw=true)
+![pycoin](https://github.com/hadif1999/pycoin/blob/master/pics/pycoin_logo_text_nobg.png?raw=true)
 # Pycoin
 
 ### a lovable data analysis and algorithmic trading library for cryptocurrencies :moneybag:
