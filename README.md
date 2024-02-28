@@ -12,7 +12,7 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 - [ ] run multiple strategy instances for each user as a single bot. (soon) 
 
 >[!NOTE]
->for usage examples please go to [examples](/examples) folder and open provided notebooks.
+>**for usage examples please go to [examples](/examples) folder and open provided notebooks.**
 
 ## Installation
 #### using pip
@@ -65,9 +65,10 @@ figure.show()
 ```python
 from pycoin.data_gathering import get_market_High_Lows
 df = get_market_High_Lows(df, candle_range = 100)
-                                                       
+df                                                     
 ```
-candle_range : range of candles to look for high and lows 
+**candle_range** : range of candles to look for high and lows 
+![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/HighLow_df.png?raw=true)
 
 ### ploting market high and lows
 ```python
@@ -105,6 +106,9 @@ plots.draw_trend_highlight("MACD_trend", df)
 
 ```
 ![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/btc_h4_2020:2023_MACD_trend.png?raw=true)
+
+
+
 
 
 
