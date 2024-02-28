@@ -17,3 +17,5 @@ pip-delete-this-directory.txt
 nosetests.xml
 coverage.xml
 data_source
+dist
+build
