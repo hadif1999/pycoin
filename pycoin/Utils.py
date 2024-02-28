@@ -149,7 +149,7 @@ def fill_missing_dates(df:pd.DataFrame, freq:str, INTERVALS:dict[str, int],
     
     
 def GetByGroup_klines(df:pd.DataFrame, grp: dict[str, int]):
-    assert "datetime" in df.index.name, "index must be datetime type"
+    assert "datetime" in df.index.dtype.name, "index must be datetime type"
     df_grouped = df.copy()
     if "year" in grp: df_grouped = df_grouped.groupby(df_grouped.index.year).get_group(grp.get("year", 2024))
     if "month" in grp: df_grouped = df_grouped.groupby(df_grouped.index.month).get_group(grp.get("month",1))

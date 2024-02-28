@@ -110,10 +110,10 @@ class Trend_Evaluator():
     
     
     
-    def eval_trend_with_MAs(dataframe, column:str = "Close" ,windows:List = [50,200], drop_MA_cols:bool = False,
+    def eval_trend_with_MAs(dataframe:pd.DataFrame, column:str = "Close" ,
+                            windows:List = [50,200], drop_MA_cols:bool = False,
                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0,
-                            inplace:bool = True,
-                            trend_col_name:str = "MA_trend"):
+                            inplace:bool = True, trend_col_name:str = "MA_trend"):
         """eval trend with moving averages (list of 2 window values (first lower second higher)
         must be inserted).
         if short term MA > long term MA -> uptrend
@@ -138,7 +138,7 @@ class Trend_Evaluator():
         
         df_ = dataframe.copy()
         df_.Name = dataframe.Name
-        df_.index.name = ''
+        
                     
         df_with_MA = calc_MAs(df_, column = column, windows = windows)
         df_with_MA.Name = dataframe.Name
@@ -197,7 +197,7 @@ class Trend_Evaluator():
         # Determine the trend based on the ROC
         threshold = 0  # Threshold for trend determination
         df_[trend_col_name] = np.where(df_['ROC'] > threshold, up_trends_as, 
-                                    np.where(df_['ROC'] < -threshold, down_trends_as, side_trends_as))
+                            np.where(df_['ROC'] < -threshold, down_trends_as, side_trends_as))
         # Get the overall trend based on the last row
         overall_trend = df_[trend_col_name].iloc[-1]
         if drop_ROC : df_.drop("ROC", axis = 1 , inplace = True)

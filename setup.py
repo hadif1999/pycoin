@@ -6,11 +6,7 @@ from setuptools import setup, find_packages
 from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
-short_description = """a lovable data analysis and algorithmic trading library for cryptocurrencies,
-including tools for deploying any strategies including pattern based strategies,
-price action strategies, indicator based strategies and also Machine learning based strategies. 
-able to run multi strategy instances on a single bot as a webapp and a lot more..."""
-
+short_description = "a lovable data analysis and algorithmic trading library for cryptocurrencies,including tools for deploying and analyzing any strategy"
 
 plot = ['plotly>=4.0']
 
