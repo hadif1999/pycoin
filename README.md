@@ -1,5 +1,5 @@
-![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/pycoin_logo_raw_nobg.png?raw=true)
-#                                        Pycoin
+![pycoin](https://github.com/hadif1999/pycoin/blob/master/pics/pycoin_logo_raw_nobg.png)
+# Pycoin
 
 ### a lovable data analysis and algorithmic trading library for cryptocurrencies :moneybag:
 including tools for deploying any strategy including pattern based strategies,
