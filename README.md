@@ -1,21 +1,30 @@
 # pycoin
-### a lovable data analysis and algorithmic trading library for cryptocurrencies
+### a lovable data analysis and algorithmic trading library for cryptocurrencies :moneybag:
 including tools for deploying any strategy including pattern based strategies,
 Price Action strategies, Indicator based strategies and also Machine learning based strategies. 
 able to run multi strategy instances on a single bot as a webapp and a lot more...
 ### what can this package do:
-1. download market historical data for all symbols from almost all exchanges thanks to **ccxt**.
-2. visualizing capabilities to easily analyze market.
-3. able to perform some useful analysis such as finding market trend according to market past high and lows, finding market important levels (like support and resistance) and more .
-4. able to define your strategy, backtest it, run it in dry run mode and also in real mode.
-5. using telegram bot and webapp to control and monitor your bot. (soon)  
-6. run multiple strategy instances for each user as a single bot (soon) 
+[x] download market historical data for all symbols from almost all exchanges thanks to [ccxt](https://github.com/ccxt/ccxt) :chart_with_upwards_trend: 
+[x] visualizing capabilities to easily analyze market using [plotly](https://github.com/plotly/plotly.py) :mag:
+[x] able to perform some useful analysis such as finding market trend according to market past high and lows, finding market important levels (like support and resistance) and more :bar_chart:
+[] able to define your strategy, backtest it, run it in dry run mode and also in real mode :robot: (soon)
+[] using telegram bot and webapp to control and monitor your bot. (soon)  
+[] run multiple strategy instances for each user as a single bot. (soon) 
 
-Note: for usage examples please go to examples folder and open provided notebooks.
+>[!NOTE]
+>**[for usage examples please go to examples (/examples) folder and open provided notebooks.]**
 
-## Install
+## Installation
+#### using pip
 ```bash
 !pip install pythoncoin
+```
+#### via cloning
+```bash
+git clone git@github.com:hadif1999/pycoin.git
+cd pycoin
+python3 setup.py sdist
+pip3 install .
 ```
 ## Quick start
 
