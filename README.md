@@ -4,15 +4,15 @@ including tools for deploying any strategy including pattern based strategies,
 Price Action strategies, Indicator based strategies and also Machine learning based strategies. 
 able to run multi strategy instances on a single bot as a webapp and a lot more...
 ### what can this package do:
-[x] download market historical data for all symbols from almost all exchanges thanks to [ccxt](https://github.com/ccxt/ccxt) :chart_with_upwards_trend: 
-[x] visualizing capabilities to easily analyze market using [plotly](https://github.com/plotly/plotly.py) :mag:
-[x] able to perform some useful analysis such as finding market trend according to market past high and lows, finding market important levels (like support and resistance) and more :bar_chart:
-[] able to define your strategy, backtest it, run it in dry run mode and also in real mode :robot: (soon)
-[] using telegram bot and webapp to control and monitor your bot. (soon)  
-[] run multiple strategy instances for each user as a single bot. (soon) 
+- [x] download market historical data for all symbols from almost all exchanges thanks to [ccxt](https://github.com/ccxt/ccxt) :chart_with_upwards_trend: 
+- [x] visualizing capabilities to easily analyze market using [plotly](https://github.com/plotly/plotly.py) :mag:
+- [x] able to perform some useful analysis such as finding market trend according to market past high and lows, finding market important levels (like support and resistance) and more :bar_chart:
+- [] able to define your strategy, backtest it, run it in dry run mode and also in real mode :robot: (soon)
+- [] using telegram bot and webapp to control and monitor your bot. (soon)  
+- [] run multiple strategy instances for each user as a single bot. (soon) 
 
 >[!NOTE]
->for usage examples please go to [examples] (/examples) folder and open provided notebooks.
+>for usage examples please go to [examples] (examples) folder and open provided notebooks.
 
 ## Installation
 #### using pip
@@ -40,8 +40,6 @@ df = KlineData_Fetcher(symbol="BTC/USDT",
                        data_exchange="binance",
                        since = dt.datetime(2020, 1, 1)
                        )
-
-df
 
 ```
 
