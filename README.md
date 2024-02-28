@@ -1,4 +1,6 @@
-# pycoin
+![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/pycoin_logo_raw_nobg.png?raw=true)
+# Pycoin
+
 ### a lovable data analysis and algorithmic trading library for cryptocurrencies :moneybag:
 including tools for deploying any strategy including pattern based strategies,
 Price Action strategies, Indicator based strategies and also Machine learning based strategies. 
