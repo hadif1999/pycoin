@@ -271,7 +271,7 @@ class _Levels( _StrategyBASE):
         
         df_, df_.Name = ((self.df.copy(), self.df.Name) if dataframe.empty 
                          else (dataframe.copy(),dataframe.Name))
-        
+        df_.index = df_.index.tz_localize('US/Eastern')
         
         if which_pivot.lower() not in ["weekly", "monthly"]:
             raise ValueError("which_pivot arg can be 'monthly' or 'weekly'.")

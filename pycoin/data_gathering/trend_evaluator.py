@@ -113,7 +113,7 @@ class Trend_Evaluator():
     def eval_trend_with_MAs(dataframe:pd.DataFrame, column:str = "Close" ,
                             windows:List = [50,200], drop_MA_cols:bool = False,
                             up_trends_as = 1, down_trends_as = -1, side_trends_as = 0,
-                            inplace:bool = True, trend_col_name:str = "MA_trend"):
+                            trend_col_name:str = "MA_trend"):
         """eval trend with moving averages (list of 2 window values (first lower second higher)
         must be inserted).
         if short term MA > long term MA -> uptrend
@@ -138,8 +138,8 @@ class Trend_Evaluator():
         
         df_ = dataframe.copy()
         df_.Name = dataframe.Name
-        
-                    
+        df_.index.name = ''
+        if not "Datetime" in df_.columns: df_["Datetime"] = df_.index            
         df_with_MA = calc_MAs(df_, column = column, windows = windows)
         df_with_MA.Name = dataframe.Name
         
@@ -156,6 +156,8 @@ class Trend_Evaluator():
                                      inplace= True)
         
         overall_trend = labeled_df[trend_col_name].iloc[-1]
+        labeled_df.Name = dataframe.Name
+        labeled_df.set_index("Datetime", inplace = True)
         return labeled_df
     
     

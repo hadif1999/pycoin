@@ -62,7 +62,7 @@ with open(this_directory/"requirements.txt", "r") as reqs:
 
 setup(
     name='pythoncoin',
-    version='v2.0.00',
+    version='v2.0.2',
     packages=find_packages(),
     license="MIT",
     author='Hadi Fathipour',

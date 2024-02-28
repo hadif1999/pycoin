@@ -33,3 +33,5 @@ coverage.xml
 build
 dist
 *test*
+*.egg-info*
+*.ipynb

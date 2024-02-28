@@ -12,7 +12,7 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 - [ ] run multiple strategy instances for each user as a single bot. (soon) 
 
 >[!NOTE]
->**for usage examples please go to [examples](/examples) folder and open provided notebooks.**
+>**for usage examples please go to [examples](https://github.com/hadif1999/pycoin/tree/master/examples) folder and open provided notebooks.**
 
 ## Installation
 #### using pip
