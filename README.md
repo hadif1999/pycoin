@@ -46,7 +46,7 @@ available extra packages:
 ```bash 
 !pip install pythoncoin[plot] 
 ```
-as mentioned earlier you can also use [ai], [plot], [jupyter], [hdf5] or [all] to install needed extra dependencies.
+as mentioned earlier you can also use **ai**, **plot**, **jupyter**, **hdf5** or **all** to install needed extra dependencies.
 
 ## Quick start
 
