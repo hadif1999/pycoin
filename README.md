@@ -14,27 +14,39 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 - [ ] run multiple strategy instances for each user as a single bot. (soon) 
 
 >[!NOTE]
->**for usage examples please go to [examples](https://github.com/hadif1999/pycoin/tree/master/examples) folder and open provided notebooks.**
+>**for usage examples please checkout [examples](https://github.com/hadif1999/pycoin/tree/master/examples) folder and open provided notebooks.**
 
 ## Installation
 
-#### via cloning (Recommended)
+#### via cloning (recommended)
 ```bash
-git clone git@github.com:hadif1999/pycoin.git
-cd pycoin
-pip3 install .
+pip install -e git+https://github.com/hadif1999/pycoin.git#egg="pythoncoin" 
 ```
+if you need extra dependencies such as ploting or AI packages add **[extra]**(name of extra dependency that will be mentioned below) to end of "pythoncoin" (keep using quotes)
 
-#### using pip
-##### standard installation
+example of installing plotting and jupyter dependencies:
+```bash
+pip install -e git+https://github.com/hadif1999/pycoin.git#egg="pythoncoin[jupyter,plot]" 
+```
+**please be careful not to use spaces between extra packages list**
+
+available extra packages:
+- **plot**: installs packages related to plotting.
+- **jupyter**: installs packages related to using in jupyter notebook.
+- **ai**: installs packages related to using AI features.
+- **hdf5**: installs packages related to big data features.
+- **all**: installs all available dependencies.
+
+#### installing from PyPI
+##### standard dependencies
 ```bash
 !pip install pythoncoin
 ```
-##### installation to use extra features
+##### installation with extra dependencies
 ```bash 
 !pip install pythoncoin[plot] 
 ```
-also you can use [ai], [jupyter], [hdf5] or [all] to install all extra packages
+as mentioned earlier you can also use [ai], [plot], [jupyter], [hdf5] or [all] to install needed extra dependencies.
 
 ## Quick start
 
@@ -66,7 +78,6 @@ figure = plots.plot_market()
 # if plot_by_grp is True you can plot candlestick data by group and plot a specific year, month,etc.
 figure = plots.plot_market(plot_by_grp=True, grp={"year":2023, "month":2})
 figure.show()
-
 ```
 
 ![alt text](https://github.com/hadif1999/pycoin/blob/master/pics/btc_h4_2023.2_candlestick.png?raw=true)

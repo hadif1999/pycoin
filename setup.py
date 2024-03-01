@@ -56,13 +56,25 @@ hdf5 = [
 
 all_extra = plot + develop + jupyter + ai
 
-with open(this_directory/"requirements.txt", "r") as reqs:
-    base_requirements = reqs.readlines()
-
+base_requirements = [
+    "celery>=5.3.6",
+    "requests",
+    "typeguard",
+    "asyncer",
+    "pandas",
+    "numpy",
+    "scipy",
+    "ta",
+    "ccxt",
+    "freqtrade",
+    "python-telegram-bot",
+    "fastapi"
+    ]
+    
 
 setup(
     name='pythoncoin',
-    version='v2.0.2',
+    version='v2.0.3',
     packages=find_packages(),
     license="MIT",
     author='Hadi Fathipour',
