@@ -68,7 +68,8 @@ base_requirements = [
     "ccxt",
     "freqtrade",
     "python-telegram-bot",
-    "fastapi"
+    "fastapi",
+    "wheel"
     ]
     
 

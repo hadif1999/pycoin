@@ -40,11 +40,11 @@ available extra packages:
 #### installing from PyPI
 ##### standard dependencies
 ```bash
-!pip install pythoncoin
+!pip install "pythoncoin"
 ```
 ##### installation with extra dependencies
 ```bash 
-!pip install pythoncoin[plot] 
+!pip install "pythoncoin[plot]"
 ```
 as mentioned earlier you can also use **ai**, **plot**, **jupyter**, **hdf5** or **all** to install needed extra dependencies.
 
