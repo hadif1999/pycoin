@@ -32,7 +32,6 @@ also you can use [ai], [jupyter], [hdf5] or [all] to install all extra packages
 ```bash
 git clone git@github.com:hadif1999/pycoin.git
 cd pycoin
-python3 setup.py sdist
 pip3 install .
 ```
 ## Quick start
