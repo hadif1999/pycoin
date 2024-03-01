@@ -17,6 +17,14 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 >**for usage examples please go to [examples](https://github.com/hadif1999/pycoin/tree/master/examples) folder and open provided notebooks.**
 
 ## Installation
+
+#### via cloning (Recommended)
+```bash
+git clone git@github.com:hadif1999/pycoin.git
+cd pycoin
+pip3 install .
+```
+
 #### using pip
 ##### standard installation
 ```bash
@@ -28,12 +36,6 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 ```
 also you can use [ai], [jupyter], [hdf5] or [all] to install all extra packages
 
-#### via cloning
-```bash
-git clone git@github.com:hadif1999/pycoin.git
-cd pycoin
-pip3 install .
-```
 ## Quick start
 
 after installation you can run below code to download market historical data:
