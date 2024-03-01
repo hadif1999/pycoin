@@ -20,5 +20,5 @@ data_source
 dist
 build
 *.egg-info
-*.ipynb
 *pics*
+*private*
