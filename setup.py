@@ -69,7 +69,8 @@ base_requirements = [
     "freqtrade",
     "python-telegram-bot",
     "fastapi",
-    "wheel"
+    "wheel",
+    "setuptools >= 64.0.0"
     ]
     
 
