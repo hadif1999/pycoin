@@ -14,9 +14,12 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 - [ ] run multiple strategy instances for each user as a single bot. (soon) 
 
 >[!NOTE]
->**for usage examples please checkout [examples](https://github.com/hadif1999/pycoin/tree/master/examples) folder and open provided notebooks.**
+>**for usage examples please checkout [examples](https://github.com/hadif1999/pycoin/tree/master/examples) folder and open provided notebooks and run each cell.**
 
 ## Installation
+
+>[!NOTE]
+> for installation on Google Colab notebook please refer to **installation on google colab** section 
 
 #### via cloning (recommended)
 ```bash
@@ -47,6 +50,25 @@ available extra packages:
 !pip install "pythoncoin[plot]"
 ```
 as mentioned earlier you can also use **ai**, **plot**, **jupyter**, **hdf5** or **all** to install needed extra dependencies.
+
+##### installation on Google Colab 
+before using above installation methods on Google Colab first you have to install ta-lib
+properly using Conda cmd.
+```bash
+!pip install -q condacolab
+import condacolab
+condacolab.install()
+!conda install -c conda-forge ta-lib
+```
+then you can use one of the installation methods that mentioned earlier to install pycoin
+for example:
+```bash
+!pip install -e git+https://github.com/hadif1999/pycoin.git#egg="pythoncoin[plot]" 
+```
+finally you can verify installation by running: 
+```python
+import pycoin
+``` 
 
 ## Quick start
 
