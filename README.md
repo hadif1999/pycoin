@@ -1,11 +1,11 @@
 ![pycoin](https://github.com/hadif1999/pycoin/blob/master/pics/pycoin_logo_raw_nobg.png?raw=true)
 # Pycoin
 
-### a lovable data analysis and algorithmic trading library for cryptocurrencies :moneybag:
+## a lovable data analysis and algorithmic trading library for cryptocurrencies :moneybag:
 including tools for deploying any strategy including pattern based strategies,
 Price Action strategies, Indicator based strategies and also Machine learning based strategies. 
 able to run multi strategy instances on a single bot as a webapp and a lot more...
-### what can this package do:
+## what can this package do:
 - [x] download market historical data for all symbols from almost all exchanges thanks to [ccxt](https://github.com/ccxt/ccxt) :chart_with_upwards_trend: 
 - [x] visualizing capabilities to easily analyze market using [plotly](https://github.com/plotly/plotly.py) :chart_with_downwards_trend:
 - [x] able to perform some useful analysis such as finding market trend according to market past high and lows, finding market important levels (like support and resistance) and more :bar_chart:
@@ -21,7 +21,7 @@ able to run multi strategy instances on a single bot as a webapp and a lot more.
 >[!NOTE]
 > for installation on Google Colab notebook please refer to **installation on google colab** section 
 
-#### via cloning (recommended)
+### via cloning (recommended)
 ```bash
 pip install -e git+https://github.com/hadif1999/pycoin.git#egg="pythoncoin" 
 ```
@@ -40,20 +40,20 @@ available extra packages:
 - **hdf5**: installs packages related to big data features.
 - **all**: installs all available dependencies.
 
-#### installing from PyPI
-##### standard dependencies
+### installing from PyPI
+#### installation with standard dependencies
 ```bash
 !pip install "pythoncoin"
 ```
-##### installation with extra dependencies
+#### installation with extra dependencies
 ```bash 
 !pip install "pythoncoin[plot]"
 ```
 as mentioned earlier you can also use **ai**, **plot**, **jupyter**, **hdf5** or **all** to install needed extra dependencies.
 
-##### installation on Google Colab 
+### installation on Google Colab 
 before using above installation methods on Google Colab first you have to install ta-lib
-properly using Conda cmd.
+properly using conda, you use a conda alternative for colab like [condacolab](https://github.com/conda-incubator/condacolab).
 ```bash
 !pip install -q condacolab
 import condacolab
