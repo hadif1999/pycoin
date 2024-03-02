@@ -54,7 +54,7 @@ as mentioned earlier you can also use **ai**, **plot**, **jupyter**, **hdf5** or
 ### installation on Google Colab 
 before using above installation methods on Google Colab first you have to install ta-lib
 properly using conda, you use a conda alternative for colab like [condacolab](https://github.com/conda-incubator/condacolab).
-```bash
+```python
 !pip install -q condacolab
 import condacolab
 condacolab.install()
