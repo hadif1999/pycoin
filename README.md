@@ -60,7 +60,7 @@ import condacolab
 condacolab.install()
 !conda install -c conda-forge ta-lib
 ```
-then you can use one of the installation methods that mentioned earlier to install pycoin
+then you can use one of the installation methods that mentioned earlier to install pycoin.
 for example:
 ```bash
 !pip install -e git+https://github.com/hadif1999/pycoin.git#egg="pythoncoin[plot]" 
