@@ -63,7 +63,7 @@ condacolab.install()
 then you can use one of the installation methods that mentioned earlier to install pycoin.
 for example:
 ```bash
-!pip install -e git+https://github.com/hadif1999/pycoin.git#egg="pythoncoin[plot]" 
+!pip install "pythoncoin[plot]" 
 ```
 finally you can verify installation by running: 
 ```python
