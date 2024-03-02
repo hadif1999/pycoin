@@ -69,6 +69,7 @@ finally you can verify installation by running:
 ```python
 import pycoin
 ``` 
+restart the runtime if colab asked for it.
 
 ## Quick start
 
