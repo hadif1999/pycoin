@@ -4,6 +4,7 @@ import datetime as dt
 from pycoin.data_gathering import get_market_High_Lows
 from pycoin.strategies import dataTypes
 from pycoin.strategies._strategy_BASE import _StrategyBASE
+from pycoin.data_gathering.high_lows_evaluator import SUGGESTED_CANDLE_RANGE
 
 
 class _Levels( _StrategyBASE):
@@ -22,6 +23,8 @@ class _Levels( _StrategyBASE):
         super().__init__(**kwargs)
 
         self.fracts = None
+        self.findFracts_onIntervals = kwargs.get("find_onIntervals")
+        
         self.fig = None
         
         self.Pivots = {"weekly":{}, "monthly":{}}
@@ -201,9 +204,11 @@ class _Levels( _StrategyBASE):
     
     
     
-    def eval_fract_levels(self,*, method:str = "both", candle_ranges:range = range(40,200,20),
-                          tolerance_percent:float = 1e-5, min_occurred:int = 3, 
-                          inplace:bool = True):
+    def eval_fract_levels(self,*, method:str = "both", 
+                          candle_ranges:range|None = None,
+                          tolerance_percent:float = 1e-7, min_occurred:int = 3, 
+                          inplace:bool = True, 
+                          min_FractsDist_Pct: float = 0.01):
         """finds fract levels by past weekly and monthly pivots and past high and lows.
         does this by checking if they have enough touch.
 
@@ -217,6 +222,8 @@ class _Levels( _StrategyBASE):
             list: list of fract prices
         """        
         fracts = []
+        if not candle_ranges: 
+            candle_ranges = range(SUGGESTED_CANDLE_RANGE.get(self.interval, 10),400,20)
         
         match method:
             case "both":
@@ -234,16 +241,57 @@ class _Levels( _StrategyBASE):
                                                                  tolerance_percent,
                                                                  min_occurred+1)
         fracts = list(set(fracts))
-        fracts.sort()
+        fracts = _Levels.fracts_distance_filter(fracts, min_FractsDist_Pct)
         if inplace: self.fracts = fracts    
         return fracts
     
     
+    def fracts_distance_filter(fracts:list[float], minDist_pct:float = 0.005):
+        fracts_ser = pd.Series(fracts).sort_values().reset_index(drop=True).copy()
+        lowDistFracts = fracts_ser.pct_change() < minDist_pct
+        while lowDistFracts.any():
+            fracts_toMerge = pd.concat([fracts_ser, fracts_ser.shift(1)], axis=1)[lowDistFracts]
+            for i, _fracts_ in fracts_toMerge.T.items():
+                fracts_ser.loc[[i, i-1]] = _fracts_.mean()
+            fracts_ser.drop_duplicates(inplace=True)
+            fracts_ser = fracts_ser.sort_values().reset_index(drop = True).copy()
+            lowDistFracts = fracts_ser.pct_change() < minDist_pct
+        return fracts_ser.sort_values().round(4).tolist()
+    
+    
+    def _plot_C1C2_candles(self, C1C2s:list[dict[str, dict]], 
+                            fig = None ,C1_color:str = "orange",
+                            dataframe: pd.DataFrame = pd.DataFrame(),
+                            C2_color:str = "purple",
+                            inplace:bool = False, **kwargs):
+            """used in self.pastC1C2candles. iterates over input dataframe, finds and plots C1C2s
+
+            Args:
+                fig (plotly.graph_objs, optional): input figure. Defaults to None.
+                C1_color (str, optional): _description_. Defaults to "orange".
+                C2_color (str, optional): _description_. Defaults to "purple".
+                dataframe (pd.DataFrame, optional): _description_. Defaults to None.
+                inplace (bool, optional): _description_. Defaults to False.
+
+            Returns:
+                _type_: _description_
+            """        
+            from pycoin.plotting import Market_Plotter
+            df_ = (self.df if dataframe.empty else dataframe).copy()
+            df_.Name = self.df.Name
+            plots = Market_Plotter(OHLCV_df = df_)
+            
+            fig = fig or plots.plot_market()
+            for C1C2 in C1C2s:
+                plots.highlight_single_candle(fig, C1C2["C1"]["Datetime"], color=C1_color)
+                plots.highlight_single_candle(fig, C1C2["C2"]["Datetime"], color=C2_color)
+            return fig
+        
+    
     def plot_fracts(self, inplace= True, **kwargs):
         if not self.fracts: 
             raise ValueError("fracts levels didn't evaluated, first run eval_Fract_levels func")
-        from ...plotting.market_plotter import Market_Plotter
-        
+        from pycoin.plotting.market_plotter import Market_Plotter
         plots = Market_Plotter(self.df)
         fig = plots.plot_market(plot_by_grp=False)
         for frac in self.fracts:

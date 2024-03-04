@@ -385,36 +385,6 @@ class Pivot_Strategy_BASE(_Levels):
         """        
         return "SHORT" if close_price >= self.LastPivots[self.PivotsType]["mean"] else "LONG" 
     
-                
-                
-                
-    def _plot_C1C2_candles(self, C1C2s:list[dict[str, dict]], 
-                           fig = None ,C1_color:str = "orange",
-                           dataframe: pd.DataFrame = pd.DataFrame(),
-                           C2_color:str = "purple",
-                           inplace:bool = False, **kwargs):
-        """used in self.pastC1C2candles. iterates over input dataframe, finds and plots C1C2s
-
-        Args:
-            fig (plotly.graph_objs, optional): input figure. Defaults to None.
-            C1_color (str, optional): _description_. Defaults to "orange".
-            C2_color (str, optional): _description_. Defaults to "purple".
-            dataframe (pd.DataFrame, optional): _description_. Defaults to None.
-            inplace (bool, optional): _description_. Defaults to False.
-
-        Returns:
-            _type_: _description_
-        """        
-        from ....plotting import Market_Plotter
-        df_ = (self.df if dataframe.empty else dataframe).copy()
-        plots = Market_Plotter(OHLCV_df = df_, symbol = self.symbol,
-                               freq = self.interval, exchange=self.data_exchange)
-        
-        fig = fig or plots.plot_market()
-        for C1C2 in C1C2s:
-            plots.highlight_single_candle(fig, C1C2["C1"]["Datetime"], color=C1_color)
-            plots.highlight_single_candle(fig, C1C2["C2"]["Datetime"], color=C2_color)
-        return fig
     
     
     

@@ -8,9 +8,9 @@ from pycoin.data_gathering.trend_filters import fill_between_pivots, remove_less
 
 
 SUGGESTED_CANDLE_RANGE = {
-            "1min":1600*3*2*3, "3min":1600*3*2, "5min":1600*3, "15min":1600, "30min":800,
-            "1hour":400, "2hour":200,"4hour":100 ,"6hour":80,
-            "8hour":50, "12hour": 100//3 , "1day": 100//6,"1week":(100//6)//7 }
+            "1m":480*3*5, "3m":480*3*2, "5m":480*3, "15m":480, "30m":240,
+            "1h":120, "2h":60,"4h":40 ,"6h":20,
+            "8h":15, "12h": 10 , "1d": 5,"1w":1}
 
     
 def get_market_High_Lows(dataframe:pd.DataFrame, 
