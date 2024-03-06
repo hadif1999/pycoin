@@ -16,7 +16,7 @@ SUGGESTED_CANDLE_RANGE = {
 def get_market_High_Lows(dataframe:pd.DataFrame, 
                          candle_range:int, mode:str = "clip", *,
                          high_col:str = "High", low_col:str = "Low", datetime_col:str = "Datetime",
-                         min_time_dist:list = dt.timedelta(hours= 13),
+                         min_time_dist:list = dt.timedelta(minutes=1),
                          fill_between_two_same:bool = True,
                          remove_under_min_time_dist:bool = True,
                          colName = "Pivot"):
@@ -49,6 +49,7 @@ def get_market_High_Lows(dataframe:pd.DataFrame,
                             order = candle_range, mode = mode )[0]
     min_idx = argrelextrema(data = df_[low_col].values, comparator= np.less,
                             order = candle_range , mode = mode )[0]
+    
     max_idx = max_idx.tolist()
     min_idx = min_idx.tolist()
     ### filtering and filling between high and lows with added functions       

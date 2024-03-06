@@ -23,7 +23,6 @@ class _Levels( _StrategyBASE):
         super().__init__(**kwargs)
 
         self.fracts = None
-        self.findFracts_onIntervals = kwargs.get("find_onIntervals")
         
         self.fig = None
         
@@ -39,13 +38,14 @@ class _Levels( _StrategyBASE):
     def update_pivots(self):
         weekly_pivots_df = self.KlineData_gatherer(symbol = self.symbol,
                                                    data_exchange=self.data_exchange,
-                                                   timeframe = "1w", since = dt.datetime(2017,1,1),
+                                                   timeframe = "1w", 
+                                                   since = self.start_time,
                                                    limit=self.limit or 1000)
         
         monthly_pivots_df = self.KlineData_gatherer(symbol = self.symbol, 
                                                     data_exchange=self.data_exchange,
                                                     timeframe = "1M",
-                                                    since = dt.datetime(2017,1,1),
+                                                    since = self.start_time,
                                                     limit=self.limit or 1000)
             
         weekly_pivots = self._eval_pivots(weekly_pivots_df)
@@ -117,13 +117,21 @@ class _Levels( _StrategyBASE):
         all_high_lows = []
         colName = kwargs.get("colName", "Pivot")
         
-        for range in candle_ranges:
+        for _range in candle_ranges:
             
-            df = get_market_High_Lows(self.df, candle_range = range, colName=colName)
+            df = get_market_High_Lows(self.df, candle_range = _range, colName=colName, **kwargs)
             pivots_grp = df.groupby(colName)
-            high_ser, low_ser = pivots_grp.get_group(1)["High"], pivots_grp.get_group(-1)["Low"]
-            all_mins = low_ser.values.reshape(-1,1)[:,0].tolist()
-            all_maxs = high_ser.values.reshape(-1,1)[:,0].tolist()
+            try:
+                high_ser = pivots_grp.get_group(1)["High"]
+                all_maxs = high_ser.values.reshape(-1,1)[:,0].tolist()
+            except: 
+                all_maxs = []
+            
+            try:
+                low_ser = pivots_grp.get_group(-1)["Low"]
+                all_mins = low_ser.values.reshape(-1,1)[:,0].tolist()
+            except: 
+                all_mins = []
             all_high_lows = all_high_lows + all_mins + all_maxs 
         list(set(all_high_lows))
         all_high_lows.sort()
@@ -174,7 +182,7 @@ class _Levels( _StrategyBASE):
     
     def _eval_fract_levels_by_past_high_lows(self, candle_ranges:range = range(30,150,20),
                                       tolerance_percent:float = 0.05,
-                                      min_occurred:int = 1 ):
+                                      min_occurred:int = 1, **kwargs ):
         """checks if past high and lows are fract levels.
         does this by checking if they have enough touch to high and lows.
 
@@ -188,7 +196,7 @@ class _Levels( _StrategyBASE):
             list: list of fract prices
         """        
         
-        all_high_lows = self._eval_range_of_high_lows(candle_ranges)
+        all_high_lows = self._eval_range_of_high_lows(candle_ranges, **kwargs)
         all_high_lows_ser = pd.Series(all_high_lows)
         fracts = []
         
@@ -208,7 +216,7 @@ class _Levels( _StrategyBASE):
                           candle_ranges:range|None = None,
                           tolerance_percent:float = 1e-7, min_occurred:int = 3, 
                           inplace:bool = True, 
-                          min_FractsDist_Pct: float = 0.01):
+                          min_FractsDist_Pct: float = 0.01, **kwargs):
         """finds fract levels by past weekly and monthly pivots and past high and lows.
         does this by checking if they have enough touch.
 
@@ -228,14 +236,14 @@ class _Levels( _StrategyBASE):
         match method:
             case "both":
                 fracts = self._eval_fract_levels_by_past_high_lows(candle_ranges,tolerance_percent,
-                                                                   min_occurred)
+                                                                   min_occurred, **kwargs)
                 
                 fracts += self._eval_fract_levels_by_past_pivots(candle_ranges,
                                                                  tolerance_percent,
                                                                  min_occurred+1)                
             case "last_pivots":
                 fracts = self._eval_fract_levels_by_past_high_lows(candle_ranges,tolerance_percent,
-                                                                   min_occurred)
+                                                                   min_occurred, **kwargs)
             case "weekly_pivots":
                 fracts = self._eval_fract_levels_by_past_pivots(candle_ranges,
                                                                  tolerance_percent,

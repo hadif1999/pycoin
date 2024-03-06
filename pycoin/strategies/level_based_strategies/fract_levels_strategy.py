@@ -9,7 +9,6 @@ from pycoin import Utils
 class Fract_Levels(_Levels):
     
     def __init__(self,*, symbol:str, interval: str, APIkeys_dir:str|None = None,
-                 find_onIntervals: list[str] = ["1d", "1w"],
                  APIkeys_File:str|None = None, API_key:str|None = None,
                  Secret_key:str|None = None, exchange:str = "bingx",
                  read_APIkeys_fromFile: bool = False, start_time:dt.datetime|int = None,
@@ -17,8 +16,7 @@ class Fract_Levels(_Levels):
                  data_exchange:str = "binance", **kwargs) -> None:
         
         super().__init__(symbol = symbol, interval = interval, start_time = start_time,
-                         data_exchange = data_exchange, 
-                         find_onIntervals = find_onIntervals, **kwargs)
+                         data_exchange = data_exchange, **kwargs)
         
     
     
@@ -46,10 +44,55 @@ class Fract_Levels(_Levels):
         return [lower_level, upper_level]
     
     
+    def eval_fract_levels(self, *, method: str = "both",
+                          candle_ranges: range | None = None,
+                          accuracy_pct: float = 1e-9, min_occurred: int = 2,
+                          inplace: bool = True, min_FractsDist_Pct: float = 0.01, 
+                          find_onIntervals: list[str] = ["1d", "1w"], **kwargs):
+        
+        all_fractsLevels = []
+        for _interval in find_onIntervals:
+            levels = _Levels(symbol=self.symbol, interval= _interval,
+                         data_exchange=self.data_exchange, start_time=self.start_time)
+            levels.update_data
+            levels.update_pivots
+            fractsLevels = levels.eval_fract_levels(
+                         method = method,
+                         candle_ranges = candle_ranges, # window size for evaluating high and lows
+                         tolerance_percent=accuracy_pct, # a tolerance to specify how much accurate touches must be 
+                         min_occurred=min_occurred, 
+                         min_FractsDist_Pct=min_FractsDist_Pct, **kwargs
+                         ) 
+            all_fractsLevels += fractsLevels
+        all_fractsLevels = sorted(list(set(all_fractsLevels)))
+        all_fractsLevels = _Levels.fracts_distance_filter(all_fractsLevels, 
+                                                          min_FractsDist_Pct)
+        if inplace: self.fracts = all_fractsLevels
+        return all_fractsLevels
+    
+    
+    
+    def eval_FractsRegion(self, tolerance: float = 0.01, **kwargs):
+        if "min_FractsDist_Pct" in kwargs: del kwargs["min_FractsDist_Pct"]
+        fracts = self.eval_fract_levels(min_FractsDist_Pct=tolerance, **kwargs)
+        fracts_ser = pd.Series(fracts)
+        fracts_ser_lower = fracts_ser - (fracts_ser*tolerance)
+        fracts_ser_upper = fracts_ser + (fracts_ser*tolerance)
+        fracts_ser_lower.name = "fracts_lower"
+        fracts_ser.name = "fracts"
+        fracts_ser_upper.name = "fracts_upper" 
+        fracts_df = pd.concat([fracts_ser_lower, fracts_ser, fracts_ser_upper], axis=1)
+        if kwargs.get("inplace", True): 
+            fracts = sorted(fracts_df.values.reshape(1, -1)[0].tolist()) 
+            self.fracts = fracts
+        return fracts_df
+    
+    
     
     def _GetCrossedFracts_Candles(self, Price: float = None, *,
                                  df:pd.DataFrame = pd.DataFrame(), 
-                                 candle_type:dataTypes.CandleType = "bullish"):
+                                 candle_type:dataTypes.CandleType = "bullish", 
+                                 ignore_HighLow: bool = True):
         """finds last 'bullish'/'bearish' candle that crossed a pivot. 
 
         Args:
@@ -69,10 +112,10 @@ class Fract_Levels(_Levels):
         
         match candle_type.lower():
             case "bullish":
-                return {level: Utils.getBulish_CrossedPrice(df_, level) 
+                return {level: Utils.getBulish_CrossedPrice(df_, level, ignore_HighLow) 
                         for level in nearFracts}
             case "bearish":
-                return {level: Utils.getBearish_CrossedPrice(df_, level)
+                return {level: Utils.getBearish_CrossedPrice(df_, level, ignore_HighLow)
                         for level in nearFracts} 
             case _ : 
                 raise ValueError("candle_type can be 'bullish' or 'bearish'")
@@ -86,8 +129,9 @@ class Fract_Levels(_Levels):
                                        timeout:dt.timedelta = dt.timedelta(days=3),
                                        min_time :dt.timedelta = dt.timedelta(hours=3),
                                        betweenCandles_maxPeakDist:float = 0.015,
-                                       C1_size:float|None = None,
-                                       C2_size:float|None = 100
+                                       minC1_size:float|None = None,
+                                       minC2_size:float|None = 100, 
+                                       ignore_filters:bool = False, **kwargs
                                        ):
         
         assert C1_Type != C2_Type, "C1 and C2 candle type must be diffrent"
@@ -97,8 +141,12 @@ class Fract_Levels(_Levels):
         df_ = df_[cols].copy()
         if "Datetime" not in df_.index.dtype.name.lower(): 
             df_.set_index("Datetime", inplace = True, drop = False) 
-        C1_dict = self._GetCrossedFracts_Candles(Price = Price, df = df, candle_type = C1_Type)
-        C2_dict = self._GetCrossedFracts_Candles(Price = Price, df = df, candle_type = C2_Type)
+        C1_dict = self._GetCrossedFracts_Candles(Price = Price, df = df, 
+                                                 candle_type = C1_Type,
+                                                 ignore_HighLow = kwargs.get("ignore_HighLow", True))
+        C2_dict = self._GetCrossedFracts_Candles(Price = Price, df = df,
+                                                 candle_type = C2_Type, 
+                                                 ignore_HighLow = kwargs.get("ignore_HighLow", True))
         assert C1_dict.keys() == C2_dict.keys(), "fract Levels found must be same!"
         levelNames = C1_dict.keys()
         c1, c2 = "_C1", "_C2"
@@ -128,12 +176,15 @@ class Fract_Levels(_Levels):
         for C1C2s in C1C2_candles.values(): all_C1C2_candles += C1C2s
         
         # adding some filters to C1C2s
-        all_C1C2_candles = self.C1C2_time_filter(all_C1C2_candles, timeout = timeout,
-                                                 min_time=min_time)
-        if C1_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C1", C1_size)
-        if C2_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C2", C2_size)
-        all_C1C2_candles = self.C1C2_minDistOFBetweenCandle_filter(all_C1C2_candles,
-                                                         betweenCandles_maxPeakDist, df_)
+        if not ignore_filters:
+            all_C1C2_candles = self.C1C2_time_filter(all_C1C2_candles, timeout = timeout,
+                                                    min_time=min_time)
+            if minC1_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C1",
+                                                                    minC1_size)
+            if minC2_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C2",
+                                                                    minC2_size)
+            all_C1C2_candles = self.C1C2_minDistOFBetweenCandle_filter(all_C1C2_candles,
+                                                            betweenCandles_maxPeakDist, df_)
         
         all_C1C2_candles = sorted(all_C1C2_candles, key = lambda x: x["C2"]["Datetime"])
         return all_C1C2_candles

@@ -11,11 +11,13 @@ def fill_between_pivots( max_idx:list, min_idx:list , df_:pd.DataFrame, high_col
             isnan = pd.concat([high_df, low_df], axis = 1, sort = True).isna()
             isnum = isnan == False
             
+            if min_idx == [] or max_idx == []: return max_idx, min_idx
             min_idx_ = min_idx.copy()
+            
             j = 0
             
             # adding new min between two immediate max
-            for i, val in isnan.iterrows(): 
+            for i, val in isnan.iterrows():
                 if i == max_idx[-1]: break
                 # if we have two immediate highs and two coresspanding nan in lows
                 if isnum[high_col_name].iloc[[j, j+1]].all() and isnan[low_col_name].iloc[[j, j+1]].all(): 

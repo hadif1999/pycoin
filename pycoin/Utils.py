@@ -178,13 +178,27 @@ def add_candleType(df:pd.DataFrame):
 
 
 @typechecked
-def getBulish_CrossedPrice(df: pd.DataFrame, Price:float) -> pd.DataFrame:
-    cond = (df.Close > Price) & (df.Open < Price)
+def getBulish_CrossedPrice(df: pd.DataFrame, Price:float, 
+                           ignore_HighLow: bool = True) -> pd.DataFrame:
+    
+    isbullish = (df.Close > df.Open)
+    betweenCloseOpen_cond = (df.Close > Price) & (df.Open < Price)
+    if not ignore_HighLow:
+        betweenLowOpen_cond = (Price >= df.Low) & (Price < df.Open)  
+        cond = isbullish & (betweenCloseOpen_cond | betweenLowOpen_cond)
+    else: cond = isbullish & betweenCloseOpen_cond
     return df.loc[cond, :]
 
+
 @typechecked
-def getBearish_CrossedPrice(df: pd.DataFrame, Price: float) -> pd.DataFrame:
-    cond = (df.Close < Price) & (df.Open > Price)
+def getBearish_CrossedPrice(df: pd.DataFrame, Price: float, 
+                            ignore_HighLow) -> pd.DataFrame:
+    isbearish = (df.Close < df.Open)
+    betweenCloseOpen_cond = (df.Close < Price) & (df.Open > Price)
+    if not ignore_HighLow:
+        betweenHighOpen_cond = (Price <= df.High) & (Price > df.Open)
+        cond = isbearish & (betweenCloseOpen_cond | betweenHighOpen_cond)
+    else: cond = isbearish & betweenCloseOpen_cond
     return df.loc[cond, :]
 
 

@@ -16,6 +16,8 @@ def KlineData_Fetcher(symbol: str, timeframe: str, data_exchange:str,
     assert data_exchange in Data_Exchanges.keys(), f"exchange not found, current exchanges: {list(Data_Exchanges.keys())}"
     # get exchange ccxt ohlcv fetcher func
     data_fetcher = Data_Exchanges[data_exchange].fetch_ohlcv
+    dataframe_Name = dataframe_Name_format.format(symbol = symbol, exchange = data_exchange,
+                                                  timeframe = timeframe) 
     kwargs = dict(symbol=symbol, timeframe=timeframe, limit=limit)
     ohlcv = data_fetcher(**kwargs, since = None)
     all_ohlcv = []
@@ -37,7 +39,7 @@ def KlineData_Fetcher(symbol: str, timeframe: str, data_exchange:str,
                 _since_ = last_fetched_time
                 all_ohlcv += _ohlcv_
             prev_last_fetched_time = last_fetched_time  
-            print(f"""\n\n{data_exchange}|{timeframe}|{symbol}  
+            print(f"""\n\n{dataframe_Name}  
                   untill {Utils.ts2dt(int(all_ohlcv[-1][0]/1000)).__str__()} fetched""")
     else: 
         all_ohlcv = ohlcv
@@ -46,8 +48,7 @@ def KlineData_Fetcher(symbol: str, timeframe: str, data_exchange:str,
                           fill_missing=fill_missing, drop_incomplete=drop_incomplete,
                           datetime_index=datetime_index, symbol = symbol)
     # evaluate given ex
-    df.Name = dataframe_Name_format.format(symbol = symbol, timeframe = timeframe,
-                                           exchange = data_exchange)
+    df.Name = dataframe_Name
     return df
 
 
