@@ -5,6 +5,7 @@ import datetime as dt
 import pandas as pd
 from .. import dataTypes
 from pycoin import Utils
+from typeguard import typechecked
 
 class Fract_Levels(_Levels):
     
@@ -131,7 +132,9 @@ class Fract_Levels(_Levels):
                                        betweenCandles_maxPeakDist:float = 0.015,
                                        minC1_size:float|None = None,
                                        minC2_size:float|None = 100, 
-                                       ignore_filters:bool = False, **kwargs
+                                       ignore_timeFilter:bool = False,
+                                       ignore_C1C2_sizeFilter:bool = False,
+                                       ignore_lowestlowDist_filter:bool = False, **kwargs
                                        ):
         
         assert C1_Type != C2_Type, "C1 and C2 candle type must be diffrent"
@@ -146,7 +149,7 @@ class Fract_Levels(_Levels):
                                                  ignore_HighLow = kwargs.get("ignore_HighLow", True))
         C2_dict = self._GetCrossedFracts_Candles(Price = Price, df = df,
                                                  candle_type = C2_Type, 
-                                                 ignore_HighLow = kwargs.get("ignore_HighLow", True))
+                                                 ignore_HighLow = True)
         assert C1_dict.keys() == C2_dict.keys(), "fract Levels found must be same!"
         levelNames = C1_dict.keys()
         c1, c2 = "_C1", "_C2"
@@ -176,19 +179,48 @@ class Fract_Levels(_Levels):
         for C1C2s in C1C2_candles.values(): all_C1C2_candles += C1C2s
         
         # adding some filters to C1C2s
-        if not ignore_filters:
+        if not ignore_timeFilter:
             all_C1C2_candles = self.C1C2_time_filter(all_C1C2_candles, timeout = timeout,
                                                     min_time=min_time)
+        if not ignore_C1C2_sizeFilter:
             if minC1_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C1",
                                                                     minC1_size)
             if minC2_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C2",
                                                                     minC2_size)
+        if not ignore_lowestlowDist_filter:
             all_C1C2_candles = self.C1C2_minDistOFBetweenCandle_filter(all_C1C2_candles,
                                                             betweenCandles_maxPeakDist, df_)
-        
-        all_C1C2_candles = sorted(all_C1C2_candles, key = lambda x: x["C2"]["Datetime"])
         return all_C1C2_candles
     
+    
+    
+    def FindAllC1C2_Candles_FromPrice(self, *arg, **kwargs):
+        
+        all_C1C2s = []
+        if kwargs["ignore_HighLow"]: 
+            C1C2s_noHighLow = self._FindAllC1C2_Candles_FromPrice(*arg, **kwargs)
+            all_C1C2s += C1C2s_noHighLow
+        else: 
+            C1C2s_HighLow = self._FindAllC1C2_Candles_FromPrice(*arg, **kwargs)
+            kwargs["ignore_HighLow"] = True
+            C1C2s_noHighLow = self._FindAllC1C2_Candles_FromPrice(*arg, **kwargs)
+            all_C1C2s += C1C2s_HighLow
+            all_C1C2s += C1C2s_noHighLow
+            
+        all_C1C2s = self.rm_repeated_C1C2_pairs(all_C1C2s)
+        all_C1C2s = sorted(all_C1C2s, key = lambda x: x["C2"]["Datetime"])
+        return all_C1C2s
+    
+    
+    def rm_repeated_C1C2_pairs(self, C1C2s: list[dict[str]]):
+        C1s = [C1C2["C1"] for C1C2 in C1C2s]
+        C2s = [C1C2["C2"] for C1C2 in C1C2s]
+        for C1, C2, C1C2 in zip(C1s, C2s, C1C2s):
+            while C1s.count(C1)>1 or C2s.count(C2)>1 or C1C2s.count(C1C2)>1:
+                C1C2s.remove(C1C2)
+                C1s.remove(C1)
+                C2s.remove(C2)
+        return C1C2s
     
     
     def C1C2_time_filter(self, C1C2s:list[dict[str,dict]], 
@@ -240,6 +272,101 @@ class Fract_Levels(_Levels):
                 if C1_diff >= minDist and C2_diff >= minDist: 
                     all_C1C2s.append(C1C2)
         return all_C1C2s
+    
+    
+class C1C2s:
+    
+    @typechecked
+    def __init__(self, c1c2s: list[dict[str]]) -> None:
+        self._c1c2s = c1c2s
+        self.rm_repeated_pairs().rm_repeated_C1s().rm_repeated_C2s()
+        self.sort()
+        
+    @property
+    def c1c2s(self):
+        return self._c1c2s
+    
+    @property
+    def values(self):
+        return self.c1c2s
+    
+    def rm_repeated_pairs(self):
+        for C1C2 in self.c1c2s: 
+            while self.c1c2s.count(C1C2) > 1: self.c1c2s.remove(C1C2)        
+        return self
+    
+    
+    def rm_repeated_C1s(self):
+        C1s = self.C1s 
+        for C1, C1C2 in zip(C1s, self.c1c2s):
+            while C1s.count(C1) > 1:
+                C1s.remove(C1)
+                self.c1c2s.remove(C1C2)
+        return self
+    
+    
+    def rm_repeated_C2s(self):
+        C2s = self.C2s 
+        for C2, C1C2 in zip(C2s, self.c1c2s):
+            while C2s.count(C2) > 1:
+                C2s.remove(C2)
+                self.c1c2s.remove(C1C2)
+        return self
+    
+    
+    def mixPeakDist_FromC1C2_filter(self, minDist: float = 0.015, 
+                                dataframe: pd.DataFrame = pd.DataFrame(), 
+                                inplace: bool = True):
+
+        candleType_col = "CandleType"
+        df_ = (dataframe).copy()
+        df_[candleType_col] = Utils.add_candleType(df_)
+        all_C1C2s = []
+        for C1C2 in self.c1c2s:
+            C1, C2 = C1C2["C1"], C1C2["C2"]
+            between_C1C2_candles = df_.loc[C1["Datetime"]:C2["Datetime"]].iloc[1:-2]
+            if between_C1C2_candles.empty: continue
+            C1_type = df_.loc[C1["Datetime"], candleType_col]
+            C1C2Type = 1 if C1_type == 1 else -1
+            candlesByType_grp = between_C1C2_candles.groupby(candleType_col)
+            if C1C2Type not in candlesByType_grp.groups: continue
+            candlesByType = candlesByType_grp.get_group(C1C2Type)
+            if C1C2Type == 1: 
+                C1_diff = ( abs(C1["High"] - candlesByType["High"].max()) / C1["High"] )
+                C2_diff = ( abs(C2["High"] - candlesByType["High"].max()) / C2["High"] )
+                if C1_diff >= minDist and C2_diff >= minDist: 
+                    all_C1C2s.append(C1C2)
+            else:
+                C1_diff = ( abs(C1["Low"] - candlesByType["Low"].min()) / C1["Low"] )
+                C2_diff = ( abs(C2["Low"] - candlesByType["Low"].min()) / C2["Low"] )
+                if C1_diff >= minDist and C2_diff >= minDist: 
+                    all_C1C2s.append(C1C2)
+        if inplace: self.c1c2s = all_C1C2s
+        return all_C1C2s
+            
+    
+    
+    @property
+    def C1s(self):
+        return [C1C2["C1"] for C1C2 in self.c1c2s]
+    
+    @property
+    def C2s(self):
+        return [C1C2["C2"] for C1C2 in self.c1c2s]
+    
+    def sort(self):
+        self.c1c2s = sorted(self.c1c2s, key= lambda x: x["C2"]["Datetime"])
+        return self
+    
+    @property
+    def last(self):
+        return self.c1c2s[-1]
+    
+    def __repr__(self) -> str:
+        return f"{self.c1c2s}"
+    
+    def __str__(self):
+        return f"{self.c1c2s}"
     
     
     

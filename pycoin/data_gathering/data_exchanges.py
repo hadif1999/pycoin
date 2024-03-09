@@ -47,7 +47,6 @@ def KlineData_Fetcher(symbol: str, timeframe: str, data_exchange:str,
     df = postprocess_Data(ohlcv=all_ohlcv, timeframe = timeframe,
                           fill_missing=fill_missing, drop_incomplete=drop_incomplete,
                           datetime_index=datetime_index, symbol = symbol)
-    # evaluate given ex
     df.Name = dataframe_Name
     return df
 
