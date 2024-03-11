@@ -56,7 +56,7 @@ class Fract_Levels(_Levels):
             levels = _Levels(symbol=self.symbol, interval= _interval,
                          data_exchange=self.data_exchange, start_time=self.start_time)
             levels.update_data
-            levels.update_pivots
+            if method in ["both", "pivots"]: levels.update_pivots
             fractsLevels = levels.eval_fract_levels(
                          method = method,
                          candle_ranges = candle_ranges, # window size for evaluating high and lows

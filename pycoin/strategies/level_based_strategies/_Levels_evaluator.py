@@ -166,9 +166,7 @@ class _Levels( _StrategyBASE):
         all_pivots.sort()
         all_high_lows = self._eval_range_of_high_lows(candle_ranges)  
         all_high_lows_ser = pd.Series(all_high_lows)
-           
         fracts = []
-        
         for pivot in all_pivots:
             upper_level = pivot + pivot*(tolerance_percent/100.0)
             lower_level = pivot - pivot*(tolerance_percent/100.0)
@@ -241,10 +239,10 @@ class _Levels( _StrategyBASE):
                 fracts += self._eval_fract_levels_by_past_pivots(candle_ranges,
                                                                  tolerance_percent,
                                                                  min_occurred+1)                
-            case "last_pivots":
+            case "fracts":
                 fracts = self._eval_fract_levels_by_past_high_lows(candle_ranges,tolerance_percent,
                                                                    min_occurred, **kwargs)
-            case "weekly_pivots":
+            case "pivots":
                 fracts = self._eval_fract_levels_by_past_pivots(candle_ranges,
                                                                  tolerance_percent,
                                                                  min_occurred+1)
