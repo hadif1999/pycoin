@@ -62,7 +62,7 @@ def change_numeric_cols_type(df:pd.DataFrame,
 
 
 @typechecked
-def to_datetime_index(df:pd.DataFrame = None, time_col:str = "Datetime"):
+def to_datetime_index(df:pd.DataFrame, time_col:str = "Datetime"):
     df_ = df.copy()
     df_.set_index(time_col, drop = True, inplace = True)
     df_.index.name = time_col
@@ -76,7 +76,7 @@ def reverse_dataframe(df:pd.DataFrame):
 
 Column_NameType = Literal["title", "lower", "upper"]
 @typechecked
-def case_col_names(dataframe:pd.DataFrame = None, method:Column_NameType = "title") -> pd.DataFrame:
+def case_col_names(dataframe:pd.DataFrame, method:Column_NameType = "title") -> pd.DataFrame:
         """change dataframe column names
 
         Args:
@@ -200,6 +200,17 @@ def getBearish_CrossedPrice(df: pd.DataFrame, Price: float,
         cond = isbearish & (betweenCloseOpen_cond | betweenHighOpen_cond)
     else: cond = isbearish & betweenCloseOpen_cond
     return df.loc[cond, :]
+
+
+def to_standard_OHLCV_dataframe(df: pd.DataFrame):
+    df_ = df.copy()
+    df_ = case_col_names(df_, "title")
+    if "datetime" not in df_.index.dtype.name.lower():
+        date_col = [col for col in df_.columns if "date" in col.lower()][0]
+        if "Datetime" not in df_.columns: df_["Datetime"] = df_[date_col]
+        df_.set_index("Datetime", inplace=True)
+    check_isStandard_OHLCV_dataframe(df_)
+    return df_
 
 
 def check_isStandard_OHLCV_dataframe(dataframe:pd.DataFrame) -> None:
