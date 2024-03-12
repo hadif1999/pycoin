@@ -1,4 +1,5 @@
 import ccxt 
+import ccxt.async_support as accxt
 from freqtrade.data.converter import ohlcv_to_dataframe
 from pycoin import Utils
 import datetime as dt
@@ -10,7 +11,8 @@ def KlineData_Fetcher(symbol: str, timeframe: str, data_exchange:str,
                       limit:int = 1000, fill_missing: bool = True, 
                       drop_incomplete: bool = True, datetime_index: bool = True,
                       throw_exc: bool = False,
-                      dataframe_Name_format:str = "{symbol}|{exchange}|{timeframe}"):
+                      dataframe_Name_format:str = "{symbol}|{exchange}|{timeframe}",
+                      title_col_names:bool = True, **kwargs):
     
     data_exchange = data_exchange.lower() 
     assert data_exchange in Data_Exchanges.keys(), f"exchange not found, current exchanges: {list(Data_Exchanges.keys())}"
@@ -46,21 +48,25 @@ def KlineData_Fetcher(symbol: str, timeframe: str, data_exchange:str,
     # filling nans and missing values
     df = postprocess_Data(ohlcv=all_ohlcv, timeframe = timeframe,
                           fill_missing=fill_missing, drop_incomplete=drop_incomplete,
-                          datetime_index=datetime_index, symbol = symbol)
+                          datetime_index=datetime_index, symbol = symbol,
+                          title_col_names = title_col_names)
     df.Name = dataframe_Name
     return df
 
 
 
-def postprocess_Data(ohlcv: list[float], fill_missing: bool = True,
-                     drop_incomplete: bool = True, datetime_index: bool = True, **kwargs):
+def postprocess_Data(ohlcv: list[float], datetime_index: bool = True, **kwargs):
     
     df = ohlcv_to_dataframe(ohlcv = ohlcv, timeframe = kwargs.get("timeframe"),
-                            fill_missing=fill_missing, drop_incomplete=drop_incomplete,
+                            fill_missing=kwargs.get("fill_missing", True),
+                            drop_incomplete=kwargs.get("drop_incomplete", True),
                             pair = kwargs.get("symbol"))
-    df.rename(columns = {"date":"datetime"}, inplace = True)
-    df = Utils.case_col_names(df, "title")
-    if datetime_index: df.set_index("Datetime", inplace = True)
+    df['datetime'] = df["date"]
+    if kwargs.get("title_col_names", True):
+        df = Utils.case_col_names(df, "title")
+        if datetime_index: df.set_index("Datetime", inplace = True)
+    else: 
+        if datetime_index: df.set_index("datetime", inplace = True)
     return df
      
 

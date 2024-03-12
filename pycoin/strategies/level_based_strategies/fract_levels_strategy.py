@@ -9,14 +9,14 @@ from typeguard import typechecked
 
 class Fract_Levels(_Levels):
     
-    def __init__(self,*, symbol:str, interval: str, APIkeys_dir:str|None = None,
+    def __init__(self,*, symbol:str, timeframe: str, APIkeys_dir:str|None = None,
                  APIkeys_File:str|None = None, API_key:str|None = None,
                  Secret_key:str|None = None, exchange:str = "bingx",
                  read_APIkeys_fromFile: bool = False, start_time:dt.datetime|int = None,
                  read_APIkeys_fromEnv: bool = True, isdemo:bool = True, 
                  data_exchange:str = "binance", **kwargs) -> None:
         
-        super().__init__(symbol = symbol, interval = interval, start_time = start_time,
+        super().__init__(symbol = symbol, timeframe = timeframe, start_time = start_time,
                          data_exchange = data_exchange, **kwargs)
         
     
@@ -53,7 +53,7 @@ class Fract_Levels(_Levels):
         
         all_fractsLevels = []
         for _interval in find_onIntervals:
-            levels = _Levels(symbol=self.symbol, interval= _interval,
+            levels = _Levels(symbol=self.symbol, timeframe= _interval,
                          data_exchange=self.data_exchange, start_time=self.start_time)
             levels.update_data
             if method in ["both", "pivots"]: levels.update_pivots
@@ -66,8 +66,9 @@ class Fract_Levels(_Levels):
                          ) 
             all_fractsLevels += fractsLevels
         all_fractsLevels = sorted(list(set(all_fractsLevels)))
-        all_fractsLevels = _Levels.fracts_distance_filter(all_fractsLevels, 
-                                                          min_FractsDist_Pct)
+        all_fractsLevels = self.fracts_distance_filter(all_fractsLevels, 
+                                                        min_FractsDist_Pct,
+                                                        rel_to_LastClose = True)
         if inplace: self.fracts = all_fractsLevels
         return all_fractsLevels
     
@@ -156,6 +157,7 @@ class Fract_Levels(_Levels):
         C1_colNames, C2_colNames = [col+c1 for col in cols], [col+c2 for col in cols]
         # getting C1,C2 pair
         C1C2_candles = {}
+        # levelName is the level that candle C1, C2 may cross it (it's float)
         for levelName in levelNames:
             C1_df, C2_df = C1_dict[levelName], C2_dict[levelName]
             C1_df["Datetime"], C2_df["Datetime"] = C1_df.index, C2_df.index
@@ -172,7 +174,7 @@ class Fract_Levels(_Levels):
             _C1_df = Utils.remove_from_ColumnNames(_C1_df, suffix = c1)
             _C2_df = Utils.remove_from_ColumnNames(_C2_df, suffix = c2)
             # making a list of dicts with C1 and C2 keys
-            C1C2_candles[levelName] = [{"C1":C1[1].to_dict(), "C2":C2[1].to_dict()} 
+            C1C2_candles[levelName] = [{"C1":C1[1].to_dict(),"C2":C2[1].to_dict(),"level":levelName} 
                                        for C1, C2 in zip(_C1_df.iterrows(), _C2_df.iterrows())]
         # putting all levels C1, C2s in a single list
         all_C1C2_candles = []
@@ -216,10 +218,7 @@ class Fract_Levels(_Levels):
         C1s = [C1C2["C1"] for C1C2 in C1C2s]
         C2s = [C1C2["C2"] for C1C2 in C1C2s]
         for C1, C2, C1C2 in zip(C1s, C2s, C1C2s):
-            while C1s.count(C1)>1 or C2s.count(C2)>1 or C1C2s.count(C1C2)>1:
-                C1C2s.remove(C1C2)
-                C1s.remove(C1)
-                C2s.remove(C2)
+            while C1C2s.count(C1C2)>1: C1C2s.remove(C1C2)
         return C1C2s
     
     

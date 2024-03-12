@@ -1,25 +1,28 @@
 from typing import Literal
 import pandas as pd
 from pycoin import KlineData_Fetcher
+import datetime as dt
 
 
 class _StrategyBASE:
     
-    def __init__(self, data_exchange:str = "binance",
+    def __init__(self, symbol:str, timeframe:str, data_exchange:str = "binance",
+                 start_time:dt.datetime|None|int = None,
                  dataName_format:str = "{symbol}|{exchange}|{timeframe}",
                  **kwargs) -> None:
         
         #  assigning object parametres such as self.symbol, self.interval
-        for key, val in kwargs.items():
-            setattr(self, key, val)
-        self.symbol:str = self.symbol.upper().replace("-", '/')
+        self.timeframe = self.interval = timeframe
+        self.start_time = start_time
+        self.kwargs = kwargs
+        self.symbol:str = symbol.upper().replace("-", '/')
         self.KlineData_gatherer = KlineData_Fetcher
         self.data_exchange = data_exchange.lower()
         self.df = pd.DataFrame() # main dataframe
         self.dataName_format = dataName_format
         self.dataName = dataName_format.format(symbol = self.symbol, 
                                                 exchange = data_exchange, 
-                                                timeframe = self.interval or self.freq)
+                                                timeframe = self.interval)
             
         self.SL, self.TP = None, None
         self.side: Literal["LONG", "SHORT"] = None
@@ -32,11 +35,11 @@ class _StrategyBASE:
     @property
     def update_data(self):
         print(f"\n\nfetching OHLCV data for {self.dataName}\n")
-        self.dataframe = self.KlineData_gatherer(symbol = self.symbol, data_exchange= self.data_exchange,
-                                                 timeframe = self.interval, 
-                                                 since = self.start_time,
-                                                 limit = self.limit or 500,
-                                                 dataframe_Name_format=self.dataName_format)
+        self.dataframe = self.KlineData_gatherer(symbol=self.symbol,
+                                                 data_exchange=self.data_exchange,
+                                                 timeframe=self.timeframe,
+                                                 since=self.start_time,
+                                                 **self.kwargs)
         print("done\n")
         return self.dataframe
     
