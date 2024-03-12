@@ -66,9 +66,9 @@ class Fract_Levels(_Levels):
                          ) 
             all_fractsLevels += fractsLevels
         all_fractsLevels = sorted(list(set(all_fractsLevels)))
-        all_fractsLevels = self.fracts_distance_filter(all_fractsLevels, 
-                                                        min_FractsDist_Pct,
-                                                        **kwargs)
+        all_fractsLevels = Fract_Levels.fracts_distance_filter(all_fractsLevels, 
+                                                min_FractsDist_Pct,
+                                                **kwargs)
         if inplace: self.fracts = all_fractsLevels
         return all_fractsLevels
     

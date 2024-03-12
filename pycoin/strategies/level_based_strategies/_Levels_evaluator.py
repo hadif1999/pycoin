@@ -247,16 +247,16 @@ class _Levels( _StrategyBASE):
                                                                  tolerance_percent,
                                                                  min_occurred+1)
         fracts = list(set(fracts))
-        fracts = self.fracts_distance_filter(fracts, min_FractsDist_Pct, **kwargs)
+        fracts = _Levels.fracts_distance_filter(fracts, min_FractsDist_Pct, **kwargs)
         if inplace: self.fracts = fracts    
         return fracts
     
     
-    def fracts_distance_filter(self, fracts:list[float], minDist_pct:float = 0.005,
-                               rel_to_LastClose: bool = True):
+    def fracts_distance_filter(fracts:list[float], minDist_pct:float = 0.005,
+                               rel_to_Price: float|None = None, **kwargs):
         fracts_ser = pd.Series(fracts).sort_values().reset_index(drop=True).copy()
-        change_pct = (fracts_ser.diff()/self.LastClose 
-                      if rel_to_LastClose else fracts_ser.pct_change())
+        change_pct = (fracts_ser.diff()/rel_to_Price 
+                      if not rel_to_Price==None else fracts_ser.pct_change())
         lowDistFracts = change_pct <= minDist_pct
         while lowDistFracts.any():
             fracts_toMerge = pd.concat([fracts_ser, fracts_ser.shift(1)], axis=1)[lowDistFracts]
@@ -264,8 +264,8 @@ class _Levels( _StrategyBASE):
                 fracts_ser.loc[[i, i-1]] = _fracts_.mean()
             fracts_ser.drop_duplicates(inplace=True)
             fracts_ser = fracts_ser.sort_values().reset_index(drop = True).copy()
-            change_pct = (fracts_ser.diff()/self.LastClose 
-                         if rel_to_LastClose else fracts_ser.pct_change())
+            change_pct = (fracts_ser.diff()/rel_to_Price
+                         if not rel_to_Price==None else fracts_ser.pct_change())
             lowDistFracts = change_pct <= minDist_pct
         return fracts_ser.sort_values().round(4).tolist()
     
