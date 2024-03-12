@@ -115,10 +115,10 @@ class Fract_Levels(_Levels):
         match candle_type.lower():
             case "bullish":
                 return {level: Utils.getBulish_CrossedPrice(df_, float(level), ignore_HighLow) 
-                        for level in nearFracts.keys()}
+                        for level in nearFracts}
             case "bearish":
                 return {level: Utils.getBearish_CrossedPrice(df_, float(level), ignore_HighLow)
-                        for level in nearFracts.keys()} 
+                        for level in nearFracts} 
             case _ : 
                 raise ValueError("candle_type can be 'bullish' or 'bearish'")
             
