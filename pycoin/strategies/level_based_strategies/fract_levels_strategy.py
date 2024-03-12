@@ -110,21 +110,21 @@ class Fract_Levels(_Levels):
         
         df_ = (self.df if df.empty else df).copy()
         
-        nearFracts = self._find_nearest_FractLevels(Price or self.LastClose)
+        nearFracts = self._find_nearest_FractLevels(Price)
         
         match candle_type.lower():
             case "bullish":
-                return {level: Utils.getBulish_CrossedPrice(df_, level, ignore_HighLow) 
-                        for level in nearFracts}
+                return {level: Utils.getBulish_CrossedPrice(df_, float(level), ignore_HighLow) 
+                        for level in nearFracts.keys()}
             case "bearish":
-                return {level: Utils.getBearish_CrossedPrice(df_, level, ignore_HighLow)
-                        for level in nearFracts} 
+                return {level: Utils.getBearish_CrossedPrice(df_, float(level), ignore_HighLow)
+                        for level in nearFracts.keys()} 
             case _ : 
                 raise ValueError("candle_type can be 'bullish' or 'bearish'")
             
             
     
-    def _FindAllC1C2_Candles_FromPrice(self, Price: float = None, *,
+    def _FindAllC1C2_Candles_FromPrice(self, Price: float, *,
                                        df: pd.DataFrame = pd.DataFrame(),
                                        C1_Type:dataTypes.CandleType = "bearish",
                                        C2_Type:dataTypes.CandleType = "bullish",
@@ -145,10 +145,10 @@ class Fract_Levels(_Levels):
         df_ = df_[cols].copy()
         if "Datetime" not in df_.index.dtype.name.lower(): 
             df_.set_index("Datetime", inplace = True, drop = False) 
-        C1_dict = self._GetCrossedFracts_Candles(Price = Price, df = df, 
+        C1_dict = self._GetCrossedFracts_Candles(Price = Price, df = df_, 
                                                  candle_type = C1_Type,
                                                  ignore_HighLow = kwargs.get("ignore_HighLow", True))
-        C2_dict = self._GetCrossedFracts_Candles(Price = Price, df = df,
+        C2_dict = self._GetCrossedFracts_Candles(Price = Price, df = df_,
                                                  candle_type = C2_Type, 
                                                  ignore_HighLow = True)
         assert C1_dict.keys() == C2_dict.keys(), "fract Levels found must be same!"
