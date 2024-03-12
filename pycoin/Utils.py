@@ -125,7 +125,7 @@ def isCorrectTimeframe(df:pd.DataFrame, freq_df:str ,
     return iscorrect
 
 
-@typechecked
+
 def fill_missing_dates(df:pd.DataFrame, freq:str, INTERVALS:dict[str, int], 
                        timestamp_col:str, verbose, resetIndex:bool = False):
         df_ = df.copy()
@@ -177,7 +177,7 @@ def add_candleType(df:pd.DataFrame):
     return df_["candleType"]
 
 
-@typechecked
+
 def getBulish_CrossedPrice(df: pd.DataFrame, Price:float, 
                            ignore_HighLow: bool = True) -> pd.DataFrame:
     
@@ -190,7 +190,7 @@ def getBulish_CrossedPrice(df: pd.DataFrame, Price:float,
     return df.loc[cond, :]
 
 
-@typechecked
+
 def getBearish_CrossedPrice(df: pd.DataFrame, Price: float, 
                             ignore_HighLow) -> pd.DataFrame:
     isbearish = (df.Close < df.Open)
