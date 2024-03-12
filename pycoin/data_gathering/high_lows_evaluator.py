@@ -19,7 +19,7 @@ def get_market_High_Lows(dataframe:pd.DataFrame,
                          min_time_dist:list = dt.timedelta(minutes=1),
                          fill_between_two_same:bool = True,
                          remove_under_min_time_dist:bool = True,
-                         colName = "Pivot"):
+                         colName = "Pivot", **kwargs):
     """this function evaluates input market highs, lows. and returns their index. 
 
     Args:
