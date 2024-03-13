@@ -42,7 +42,10 @@ class Fract_Levels(_Levels):
 
         upper_level = min(upper_levels) if upper_levels!=[] else None   
         lower_level = max(lower_levels) if lower_levels!=[] else None  
-        return [lower_level, upper_level]
+        upper_lower_levels = []
+        if upper_level: upper_lower_levels.append(upper_level)
+        if lower_level: upper_lower_levels.append(lower_level)
+        return upper_lower_levels
     
     
     def eval_fract_levels(self, *, method: str = "both",
@@ -111,6 +114,7 @@ class Fract_Levels(_Levels):
         df_ = (self.df if df.empty else df).copy()
         
         nearFracts = self._find_nearest_FractLevels(Price)
+
         
         match candle_type.lower():
             case "bullish":
