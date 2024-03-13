@@ -135,8 +135,8 @@ class Fract_Levels(_Levels):
                                        timeout:dt.timedelta = dt.timedelta(days=3),
                                        min_time :dt.timedelta = dt.timedelta(hours=3),
                                        betweenCandles_maxPeakDist:float = 0.015,
-                                       minC1_size:float|None = None,
-                                       minC2_size:float|None = 100, 
+                                       minC1_size_Pct:float|None = None,
+                                       minC2_size_pct:float|None = 0.01, 
                                        ignore_timeFilter:bool = False,
                                        ignore_C1C2_sizeFilter:bool = False,
                                        ignore_lowestlowDist_filter:bool = False, **kwargs
@@ -189,10 +189,10 @@ class Fract_Levels(_Levels):
             all_C1C2_candles = self.C1C2_time_filter(all_C1C2_candles, timeout = timeout,
                                                     min_time=min_time)
         if not ignore_C1C2_sizeFilter:
-            if minC1_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C1",
-                                                                    minC1_size)
-            if minC2_size: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C2",
-                                                                    minC2_size)
+            if minC1_size_Pct: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C1",
+                                                                    minC1_size_Pct)
+            if minC2_size_pct: all_C1C2_candles = self.C1C2_size_filter(all_C1C2_candles, "C2",
+                                                                    minC2_size_pct)
         if not ignore_lowestlowDist_filter:
             all_C1C2_candles = self.C1C2_minDistOFBetweenCandle_filter(all_C1C2_candles,
                                                             betweenCandles_maxPeakDist, df_)
@@ -240,11 +240,16 @@ class Fract_Levels(_Levels):
         
     def C1C2_size_filter(self, C1C2s: list[dict[str,dict]], 
                          CandleType: dataTypes.C1C2Type = "C2", 
-                         minSize:float = 100):
+                         minSize_pct:float = 0.01):
         
         _C1C2s = C1C2s.copy()
-        return [C1C2 for C1C2 in _C1C2s 
-         if abs(C1C2[CandleType]["Close"] - C1C2[CandleType]["Open"]) >= minSize ]    
+        C1C2_out = []
+        for C1C2 in _C1C2s:
+            close_price = C1C2[CandleType]["Close"]
+            open_price = C1C2[CandleType]["Open"]
+            if abs(close_price - open_price)/max(open_price, close_price) >= minSize_pct:
+                C1C2_out.append(C1C2)
+        return C1C2_out 
         
         
         
