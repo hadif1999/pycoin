@@ -16,11 +16,19 @@ class LorentzianClassifier_Strategy(_StrategyBASE):
         
     def predict(self, to_HeikenAshi: bool = False , MA_filter:None|int = None,**kwargs):
         if kwargs.get("update_data", True): self.update_data
-        self.df = self.lorenzclassifier.predict(Utils.to_HeikinAshi(self.df) 
-                                                if to_HeikenAshi else self.df , **kwargs)
-        self.df["Signal2"] = np.where(self.df["Kernel"] > self.df["Close"], 1, 
-                             np.where(self.df["Kernel"] < self.df["Close"], -1, 0))
-        if MA_filter: self.df["Kernel"] = self.df["Kernel"].rolling(MA_filter).mean()
+        df_ = self.df.copy()
+        df_.Name = self.df.Name
+        df_ = self.lorenzclassifier.predict(Utils.to_HeikinAshi(df_) 
+                                            if to_HeikenAshi else df_ , **kwargs)
+        df_["Signal2"] = np.where(df_["Kernel"] > df_["Close"], 1, 
+                         np.where(df_["Kernel"] < df_["Close"], -1, 0))
+        if MA_filter: df_["Kernel"] = df_["Kernel"].rolling(MA_filter,center=True).mean()
+        if kwargs.get("inplace", True):
+            try:
+                self.df["Kernel"] = df_["Kernel"]
+                self.df["Signal1"] = df_["Signal1"]
+                self.df["Signal2"] = df_["Signal2"]
+            except: pass
         return self.df
         
         
@@ -136,7 +144,7 @@ class LorentzianClassifier:
     def predict(self, df:pd.DataFrame, **kwargs) -> pd.DataFrame:
         """ Classify using the Lorentzian method and predict signals with filters. """
         assert self.max_bars_back < len(df), "max bars must be less than df.len"
-        df = self.calculate_features(df, **kwargs)
+        # df = self.calculate_features(df, **kwargs)
         signals = []
         kernel_estimates = []
 
@@ -146,18 +154,18 @@ class LorentzianClassifier:
                 kernel_estimates.append(np.nan)
                 continue
 
-            if not self.apply_filters(df, index):
-                signals.append(0)  # Filtered out
-                kernel_estimates.append(np.nan)
-                continue
+            # if not self.apply_filters(df, index):
+            #     signals.append(0)  # Filtered out
+            #     kernel_estimates.append(np.nan)
+            #     continue
             
-            features = list(kwargs.get("feature_setting", {}).keys())
-            neighbors = self.get_nearest_neighbors(df, features, index)
-            avg_close = np.mean([n[1] for n in neighbors])
-            signal_col = kwargs.get("signal_col", "Close")
-            signal = (1 if avg_close > df[signal_col].iloc[index] else -1  
-                     if avg_close < df[signal_col].iloc[index] else 0) 
-            signals.append(signal)
+            # features = list(kwargs.get("feature_setting", {}).keys())
+            # neighbors = self.get_nearest_neighbors(df, features, index)
+            # avg_close = np.mean([n[1] for n in neighbors])
+            # signal_col = kwargs.get("signal_col", "Close")
+            # signal = (1 if avg_close > df[signal_col].iloc[index] else -1  
+            #          if avg_close < df[signal_col].iloc[index] else 0) 
+            # signals.append(signal)
 
             if self.trade_with_kernel:
                 kernel_smoothing_col = kwargs.get("kernel_smoothing_col", "Close")
@@ -166,7 +174,7 @@ class LorentzianClassifier:
             else:
                 kernel_estimates.append(np.nan)
 
-        df['Signal1'] = signals
+        # df['Signal1'] = signals
         if self.show_kernel_estimate:
             df['Kernel'] = kernel_estimates
 

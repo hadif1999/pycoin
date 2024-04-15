@@ -43,6 +43,7 @@ class _StrategyBASE:
                                                  since=self.start_time,
                                                  **self.kwargs)
         print("done\n")
+        self.dataframe.Name = self.dataName
         return self.dataframe
     
     

@@ -14,6 +14,7 @@ class Market_Plotter:
         self.df = OHLCV_df
         Utils.check_isStandard_OHLCV_dataframe(OHLCV_df)        
         self.fig = self.empty_figure()
+        self.Name = getattr(self.df, "Name", "")
 
     
     
@@ -55,7 +56,7 @@ class Market_Plotter:
                     size: size of figure 
         """        
         dataframe = self.df.copy()
-        dataframe.Name = self.df.Name
+        dataframe.Name = getattr(self.df, "Name", "")
         
         if plot_by_grp:
             dataframe = Utils.GetByGroup_klines(dataframe, grp = grp)
@@ -72,8 +73,8 @@ class Market_Plotter:
         assert isinstance(fig_size, list), " 'fig_size' must be a 2 element list"
         
         fig.update_layout(
-                          title = f"{self.df.Name}, date ->from: {dataframe.index[0]}  to: {dataframe.index[-1]}",
-                          yaxis_title = f"{self.df.Name}",
+                          title = f"{self.Name}, date ->from: {dataframe.index[0]}  to: {dataframe.index[-1]}",
+                          yaxis_title = f"{self.Name}",
                           xaxis_rangeslider_visible = slider,
                           width = fig_size[0], height = fig_size[1],
                           dragmode = "pan", margin=dict(l=15, r=10, t=35, b=12)
@@ -260,7 +261,7 @@ class Market_Plotter:
             increase_color (str, optional): color of increasing candles. Defaults to "lightblue".
         """        
         df_ = self.df.copy()
-        df_.Name = self.df.Name
+        df_.Name = getattr(self.df, "Name", "")
         df_temp = df_.loc[ from_time : to_time ]
         
         highlight_candle = self.df2candlestick(df_temp, name = "highlight", increase_color = increase_color,
@@ -333,10 +334,11 @@ class Market_Plotter:
         
         if dataframe.empty: 
             df_ = self.df.copy()
-            df_.Name = self.df.Name
+            df_.Name = getattr(self.df, "Name", "")
         else: 
             df_ = dataframe.copy()
-            df_.Name = dataframe.Name
+            df_.Name = getattr(self.df, "Name", "")
+            
             
             
         if add_high_lows_shapes:
@@ -357,8 +359,8 @@ class Market_Plotter:
         for name,grp in trend_grps :
             for i,row in grp.iterrows():
                 self.highlight_single_candle(fig, row["Datetime"], color = colors_dict[name] )
-        fig.update_layout( title = f"{self.df.Name}, trend evaluated with: {column}",
-                          yaxis_title = self.df.Name
+        fig.update_layout( title = f"{self.Name}, trend evaluated with: {column}",
+                          yaxis_title = self.Name
                          )
         return fig
         
@@ -389,7 +391,7 @@ class Market_Plotter:
                                 )
         
         df_ = dataframe.copy()
-        df_.Name = dataframe.Name
+        df_.Name = getattr(self.df, "Name", "")
         if "Datetime" not in df_.columns: df_["Datetime"] = df_.index
         highlows_grp = df_.groupby(HighLows_col)
         highs = highlows_grp.get_group(1)[["Datetime","High"]].values.tolist()
@@ -402,8 +404,8 @@ class Market_Plotter:
             self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
 
         fig.update_layout(
-                          title = f"{self.df.Name}, date -> from: {self.df.index[0]}   to: {self.df.index[-1]}",
-                          yaxis_title = self.df.Name
+                          title = f"{self.Name}, date -> from: {self.df.index[0]}   to: {self.df.index[-1]}",
+                          yaxis_title = self.Name
                          )
                     
         if return_only_shapes: return fig.layout.shapes
