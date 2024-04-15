@@ -2,6 +2,7 @@ from typing import Literal
 import pandas as pd
 from pycoin import KlineData_Fetcher
 import datetime as dt
+from pycoin.plotting import Market_Plotter
 
 
 class _StrategyBASE:
@@ -26,6 +27,7 @@ class _StrategyBASE:
             
         self.SL, self.TP = None, None
         self.side: Literal["LONG", "SHORT"] = None
+        self.plotter = None
         
     
     def __getattr__(self, name):
@@ -42,6 +44,12 @@ class _StrategyBASE:
                                                  **self.kwargs)
         print("done\n")
         return self.dataframe
+    
+    
+    def plot(self, **kwargs):
+        self.plotter = Market_Plotter(self.df)
+        return self.plotter.plot_market(**kwargs)
+
     
     @property
     def df(self):

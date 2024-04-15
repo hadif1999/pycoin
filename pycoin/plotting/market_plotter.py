@@ -11,14 +11,8 @@ from pycoin import Utils
 class Market_Plotter: 
         
     def __init__(self, OHLCV_df:pd.DataFrame) -> None:
-        
         self.df = OHLCV_df
-        
-        Utils.check_isStandard_OHLCV_dataframe(OHLCV_df)
-        
-        newInd = self.df.index.strftime("%Y-%m-%d %H:%M:%S")
-        newInd = pd.to_datetime(newInd)
-        self.df.set_index(newInd, inplace = True)
+        Utils.check_isStandard_OHLCV_dataframe(OHLCV_df)        
         self.fig = self.empty_figure()
 
     
@@ -200,7 +194,7 @@ class Market_Plotter:
         
         
     def draw_circle(self, fig:go.Figure, center:List, R:float, fillcolor:str = "green", 
-                    y_scale:float = 0.1):
+                    y_scale:float = 0.1, **kwargs):
         
         """draws a circle at entered center which is a two element list to R radius 
 

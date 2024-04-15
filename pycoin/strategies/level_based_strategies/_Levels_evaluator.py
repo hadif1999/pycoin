@@ -299,12 +299,12 @@ class _Levels( _StrategyBASE):
             return fig
         
     
-    def plot_fracts(self, inplace= True, **kwargs):
+    def plot_fracts(self, inplace= True,  **kwargs):
         if not self.fracts: 
             raise ValueError("fracts levels didn't evaluated, first run eval_Fract_levels func")
         from pycoin.plotting.market_plotter import Market_Plotter
         plots = Market_Plotter(self.df)
-        fig = plots.plot_market(plot_by_grp=False)
+        fig = kwargs.get("fig") or plots.plot_market(plot_by_grp=False)
         for frac in self.fracts:
             plots.draw_static_line(fig, "h",frac, kwargs.get("color","purple"), 
                                    f"{frac}","top center", font_size = 12)

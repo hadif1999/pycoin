@@ -57,7 +57,8 @@ class Fract_Levels(_Levels):
         all_fractsLevels = []
         for _interval in find_onIntervals:
             levels = _Levels(symbol=self.symbol, timeframe= _interval,
-                         data_exchange=self.data_exchange, start_time=self.start_time)
+                         data_exchange= kwargs.get("data_exchange" ,self.data_exchange), 
+                         start_time = kwargs.get("start_time", self.start_time))
             levels.update_data
             if method in ["both", "pivots"]: levels.update_pivots
             fractsLevels = levels.eval_fract_levels(

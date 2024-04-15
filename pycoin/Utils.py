@@ -4,6 +4,9 @@ from typeguard import typechecked
 import pandas as pd
 import asyncer
 from typing import Literal
+import numpy as np 
+from scipy.signal import argrelextrema
+
 
 @typechecked
 def current_time(as_str:bool = False, as_timestamp:bool = False):
@@ -220,9 +223,44 @@ def check_isStandard_OHLCV_dataframe(dataframe:pd.DataFrame) -> None:
         dataframe (pd.DataFrame): _description_
     """    
     if dataframe.empty: raise ValueError("OHLCV dataframe can't be empty")
-    assert "datetime" in dataframe.index.dtype.name, "dataframe index type must be pd.Timestamp(datetime)"
+    assert "date" in " ".join([dataframe.index.dtype.name, dataframe.index.name]).lower() \
+    , "dataframe index type must be pd.Timestamp(datetime)"
     cols = ["Open", "High", "Low", "Close", "Volume"]
     for col in cols: assert col in dataframe.columns, f"column {col} not found in dataframe"
+    
+    
+def to_HeikinAshi(df: pd.DataFrame) -> pd.DataFrame:    
+    ha_close = (df['Open'] + df['Close'] + df['High'] + df['Low']) / 4
+    
+    ha_open = [(df['Open'].iloc[0] + df['Close'].iloc[0]) / 2]
+    for close in ha_close[:-1]:
+        ha_open.append((ha_open[-1] + close) / 2)    
+    ha_open = np.array(ha_open)
+
+    elements = df['High'], df['Low'], ha_open, ha_close
+    ha_high, ha_low = np.vstack(elements).max(axis=0), np.vstack(elements).min(axis=0)
+    
+    date_col = [c for c in df.columns if "date" if c.lower()][0]
+    df_HA = pd.DataFrame({
+        "Date":df[date_col],
+        'Open': ha_open,
+        'High': ha_high,    
+        'Low': ha_low,
+        'Close': ha_close,
+        "Volume": df.Volume
+    }) 
+    df_HA.set_index("Date", inplace=True)
+    return df_HA
+
+
+def get_signal_HighsLows_ind(data:np.ndarray, order:int = 20, mode:str = "clip", **kwargs)-> dict[str, list[int]]:
+    highs_ind_arr = argrelextrema(data = data, comparator= np.greater,
+                                  order = order, mode = mode )[0]
+    lows_ind_arr = argrelextrema(data = data, comparator= np.less,
+                                  order = order, mode = mode )[0]
+    return highs_ind_arr, lows_ind_arr
+    
+    
 
 
 @typechecked
