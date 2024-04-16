@@ -35,8 +35,8 @@ class Kalmanfilter(_StrategyBASE):
         high_idx, low_idx = Utils.get_signal_HighsLows_ind(self.filtered_data.values, **kwargs )
         lows_df, highs_df = df.iloc[low_idx], df.iloc[high_idx]
         df["Position_side"] = 0
-        df.loc[highs_df.index, "Position_side"] = 1
-        df.loc[lows_df.index, "Position_side"] = -1
+        df.loc[highs_df.index, "Position_side"] = -1
+        df.loc[lows_df.index, "Position_side"] = 1
         if kwargs.get("inplace", True): 
             self.df = df
             self.df.Name = getattr(self.df, "Name", "")
@@ -93,8 +93,8 @@ class KalmanfilterDeploy:
         high_idx, low_idx = Utils.get_signal_HighsLows_ind(df["Kalman"].values, **kwargs )
         lows_df, highs_df = df.iloc[low_idx], df.iloc[high_idx]
         df["Position_side"] = 0
-        df.loc[highs_df.index, "Position_side"] = 1
-        df.loc[lows_df.index, "Position_side"] = -1
+        df.loc[highs_df.index, "Position_side"] = -1
+        df.loc[lows_df.index, "Position_side"] = 1
         df = self.generate_position_price_range(df, filter_column, dist_pct)
         if kwargs.get("inplace", True): self.df = df
         return df
