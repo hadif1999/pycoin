@@ -3,6 +3,7 @@ import ccxt.async_support as accxt
 from freqtrade.data.converter import ohlcv_to_dataframe
 from pycoin import Utils
 import datetime as dt
+import pandas as pd
 
 
 
@@ -61,7 +62,7 @@ def postprocess_Data(ohlcv: list[float], datetime_index: bool = True, **kwargs):
                             fill_missing=kwargs.get("fill_missing", True),
                             drop_incomplete=kwargs.get("drop_incomplete", True),
                             pair = kwargs.get("symbol"))
-    df["date"] = df["date"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    df["date"] = pd.to_datetime(df["date"].dt.strftime("%Y-%m-%d %H:%M:%S"))
     df['datetime'] = df["date"]
     if kwargs.get("title_col_names", True):
         df = Utils.case_col_names(df, "title")
