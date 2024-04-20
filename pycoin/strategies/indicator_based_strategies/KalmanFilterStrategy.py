@@ -7,10 +7,24 @@ import numpy as np
 
 
 class Kalmanfilter(_StrategyBASE):
-    def __init__(self, symbol: str, timeframe: str, data_exchange: str = "binance", 
+    def __init__(self, symbol: str|None = None, timeframe: str|None = None, 
+                 data_exchange: str = "binance", 
                  start_time: datetime | None | int = None,
                  dataName_format: str = "{symbol}|{exchange}|{timeframe}",
                  observation_covariance=0.05, transition_covariance=0.01, **kwargs) -> None:
+        """
+        :param observation_covariance: 
+    :param transition_covariance: 
+
+        Args:
+            symbol (str | None, optional): Defaults to None.
+            timeframe (str | None, optional): Defaults to None.
+            data_exchange (str, optional): Defaults to "binance".
+            start_time (datetime | None | int, optional): Defaults to None.
+            dataName_format (str, optional): df name format. Defaults to "{symbol}|{exchange}|{timeframe}".
+            observation_covariance (float, optional): Variance of the observations (larger values allow for more noise). Defaults to 0.05.
+            transition_covariance (float, optional): Variance of the state transitions (smaller values make the filter smoother). Defaults to 0.01.
+        """        
         
         super().__init__(symbol, timeframe, data_exchange, start_time, dataName_format, **kwargs)
         self.kalman_kwargs = {"n_dim_obs":1, "n_dim_state":1,

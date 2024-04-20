@@ -7,16 +7,17 @@ from pycoin.plotting import Market_Plotter
 
 class _StrategyBASE:
     
-    def __init__(self, symbol:str, timeframe:str, data_exchange:str = "binance",
+    def __init__(self, symbol:str|None = None, timeframe:str|None = None,
+                 data_exchange:str = "binance",
                  start_time:dt.datetime|None|int = None,
                  dataName_format:str = "{symbol}|{exchange}|{timeframe}",
                  **kwargs) -> None:
         
         #  assigning object parametres such as self.symbol, self.interval
-        self.timeframe = self.interval = timeframe
+        if timeframe: self.timeframe = self.interval = timeframe
         self.start_time = start_time
         self.kwargs = kwargs
-        self.symbol:str = symbol.upper().replace("-", '/')
+        if symbol: self.symbol:str = symbol.upper().replace("-", '/')
         self.KlineData_gatherer = KlineData_Fetcher
         self.data_exchange = data_exchange.lower()
         self.df = pd.DataFrame() # main dataframe
