@@ -119,12 +119,4 @@ class Kalmanfilter(_StrategyBASE):
         fig.add_scatter(x = self.df.index, y = self.df["Kalman"],  
                         line_shape='spline', line={"color":kwargs.get("color", "black")},
                         name = "Kalman")
-    
-        for side, grp_df in self.df.groupby("Position_side"):
-            if side == 0: continue
-            for ind, row in grp_df.iterrows():
-                self.plotter.draw_circle(fig, [ind, row["Kalman"]], 
-                                        fillcolor = "blue" if side == 1 else "yellow", 
-                                        R = kwargs.get('R', 100), 
-                                        y_scale=kwargs.get("y_scale", 1))
         return fig

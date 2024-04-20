@@ -44,13 +44,28 @@ class _StrategyBASE:
                                                  **self.kwargs)
         print("done\n")
         self.dataframe.Name = self.dataName
+        self.solve_Position_side_column(self.dataframe)
         return self.dataframe
     
+    
+    def solve_Position_side_column(self, df:pd.DataFrame = pd.DataFrame()):
+        if "Position_side" not in df.columns: df['Position_side'] = 0
+        if "Position_side" not in self.df.columns: self.df['Position_side'] = 0
+            
     
     def plot(self, **kwargs):
         from pycoin.plotting import Market_Plotter
         self.plotter = Market_Plotter(self.df)
-        return self.plotter.plot_market(**kwargs)
+        fig = self.plotter.plot_market(**kwargs)
+        
+        for side, grp_df in self.df.groupby("Position_side"):
+            if side == 0: continue
+            for ind, row in grp_df.iterrows():
+                self.plotter.draw_circle(fig, [ind, row["Kalman"]], 
+                                        fillcolor = "blue" if side == 1 else "yellow", 
+                                        R = kwargs.get('R', 100), 
+                                        y_scale=kwargs.get("y_scale", 1))
+        return fig
 
     
     @property
