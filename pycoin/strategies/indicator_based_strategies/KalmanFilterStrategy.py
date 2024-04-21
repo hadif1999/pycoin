@@ -115,7 +115,7 @@ class Kalmanfilter(_StrategyBASE):
     
     
     def plot(self, **kwargs):
-        fig = super().plot(**kwargs)
+        fig = super().plot(timeframe = self.timeframe ,**kwargs)
         fig.add_scatter(x = self.df.index, y = self.df["Kalman"],  
                         line_shape='spline', line={"color":kwargs.get("color", "black")},
                         name = "Kalman")

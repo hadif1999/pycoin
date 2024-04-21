@@ -5,6 +5,8 @@ from typing import List
 from typing import Any
 from pycoin.data_gathering import get_market_High_Lows
 from pycoin import Utils
+from freqtrade.exchange import timeframe_to_seconds, timeframe_to_minutes
+import math
 
 
 
@@ -194,8 +196,8 @@ class Market_Plotter:
                         """)
         
         
-    def draw_circle(self, fig:go.Figure, center:List, R:float, fillcolor:str = "green", 
-                    y_scale:float = 0.1, **kwargs):
+    def draw_circle(self, fig:go.Figure, center:List, R:float = 0.0015, fillcolor:str = "green", 
+                    timeframe = "5m", **kwargs):
         
         """draws a circle at entered center which is a two element list to R radius 
 
@@ -205,17 +207,23 @@ class Market_Plotter:
             R (float): radius of circle ( evaluate with test beacuse scales data of y axis)
             fillcolor (str, optional): inside color of circle. Defaults to "green".
         """        
+        assert len(center) == 2, "center list len must be 2"
         x_c = center[0]
         if type(x_c) == pd._libs.tslibs.timestamps.Timestamp:
             x_c = str(x_c.to_pydatetime())
         
         x_center = dt.datetime.strptime(x_c , '%Y-%m-%d %H:%M:%S')
-        x_0 = x_center - dt.timedelta(minutes = R)
-        x_1 = x_center + dt.timedelta(minutes = R)
+        dx = timeframe_to_seconds(timeframe)*3
+        y_scale = math.log10(timeframe_to_seconds(timeframe)) + 1
+        y_scale2 = math.log10(center[1])+1
+        x_0 = dt.datetime.fromtimestamp(int(x_center.timestamp() - dx ))
+        x_1 = dt.datetime.fromtimestamp(int(x_center.timestamp() + dx ))        
+        y_0 = center[1]- y_scale * R 
+        y_1 = center[1]+ y_scale * R 
         
         fig.add_shape(type = "circle", fillcolor = fillcolor, layer = "below", opacity = 0.6,
-                      xref="x", yref="y", x0 = x_0  , y0 = center[1]-(float(R) * y_scale), 
-                      x1= x_1 , y1 = center[1]+ (float(R) * y_scale), editable = True )
+                      xref="x", yref="y", x0 = x_0  , y0 = y_0, 
+                      x1= x_1 , y1 = y_1, editable = True )
         
         
     

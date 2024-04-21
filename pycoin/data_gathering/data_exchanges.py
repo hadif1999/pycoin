@@ -1,5 +1,4 @@
 import ccxt 
-import ccxt.async_support as accxt
 from freqtrade.data.converter import ohlcv_to_dataframe
 from pycoin import Utils
 import datetime as dt

@@ -63,8 +63,7 @@ class _StrategyBASE:
             for ind, row in grp_df.iterrows():
                 self.plotter.draw_circle(fig, [ind, row["Kalman"]], 
                                         fillcolor = "blue" if side == 1 else "yellow", 
-                                        R = kwargs.get('R', 100), 
-                                        y_scale=kwargs.get("y_scale", 1))
+                                        **kwargs )
         return fig
 
     
