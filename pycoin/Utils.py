@@ -230,6 +230,9 @@ def check_isStandard_OHLCV_dataframe(dataframe:pd.DataFrame) -> None:
     
     
 def to_HeikinAshi(df: pd.DataFrame) -> pd.DataFrame:    
+    
+    df_ = df.copy()
+    df_.Name = getattr(df, "Name", "")
     ha_close = (df['Open'] + df['Close'] + df['High'] + df['Low']) / 4
     
     ha_open = [(df['Open'].iloc[0] + df['Close'].iloc[0]) / 2]
@@ -249,14 +252,16 @@ def to_HeikinAshi(df: pd.DataFrame) -> pd.DataFrame:
         'Close': ha_close,
         "Volume": df.Volume
     }) 
+    
     df_HA.set_index("Date", inplace=True)
     return df_HA
 
 
-def get_signal_HighsLows_ind(data:np.ndarray, order:int = 20, mode:str = "clip", **kwargs)-> dict[str, list[int]]:
-    highs_ind_arr = argrelextrema(data = data, comparator= np.greater,
+def get_signal_HighsLows_ind(high_data:np.ndarray, low_data:np.ndarray, 
+                             order:int = 20, mode:str = "clip", **kwargs)-> dict[str, list[int]]:
+    highs_ind_arr = argrelextrema(data = high_data, comparator= np.greater,
                                   order = order, mode = mode )[0]
-    lows_ind_arr = argrelextrema(data = data, comparator= np.less,
+    lows_ind_arr = argrelextrema(data = low_data, comparator= np.less,
                                   order = order, mode = mode )[0]
     return highs_ind_arr, lows_ind_arr
     

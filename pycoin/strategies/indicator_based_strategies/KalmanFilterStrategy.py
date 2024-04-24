@@ -4,6 +4,9 @@ from .._strategy_BASE import _StrategyBASE
 from pykalman import KalmanFilter
 import pandas as pd
 import numpy as np
+import ta
+
+
 
 
 class Kalmanfilter(_StrategyBASE):
@@ -31,16 +34,21 @@ class Kalmanfilter(_StrategyBASE):
                               "observation_covariance":observation_covariance,
                               "transition_covariance":transition_covariance}
         
-    def filter(self, series):
+        
+    def filter(self, series, MA_filter:int|None = None, **kwargs):
         kf = KalmanFilter(initial_state_mean=series.iloc[0], **self.kalman_kwargs)
         state_means, state_covariances = kf.filter(series.values)
         self.filtered_data = pd.Series(state_means.flatten(), index=series.index)
+        if MA_filter:
+            self.filtered_data = self.filtered_data.rolling(MA_filter, center = False).mean()
         return self.filtered_data
     
     
       # main function to get filtered signal
     def generate_signal(self, dataframe:pd.DataFrame,
-                        filter_column:str = "Close",
+                        filter_column_high:str = "High",
+                        filter_column_low:str = "Low",
+                        filter_column_mean:str = "Close",
                         **kwargs):
         """generates 'LONG', 'SHORT' signal by finding high and lows and place buy orders
         at lows and and sell orders at highs. 
@@ -58,9 +66,16 @@ class Kalmanfilter(_StrategyBASE):
         df = dataframe.copy()
         df.Name = getattr(dataframe, "Name", "")
         # filter given data by Kalman filter
-        df["Kalman"] = self.filter(df[filter_column])
+        df["Kalman_high"] = self.filter(df[filter_column_high], **kwargs)
+        df["Kalman"] = self.filter(df[filter_column_mean], **kwargs)
+        df["Kalman_low"] = self.filter(df[filter_column_low], **kwargs)
+        
+        df["Kalman_mean"] = df[["Kalman_low", "Kalman", "Kalman_high"]].mean(axis=1)
+        
         # finding high and lows of filtered data
-        high_idx, low_idx = Utils.get_signal_HighsLows_ind(df["Kalman"].values, **kwargs )
+        high_idx, low_idx = Utils.get_signal_HighsLows_ind(df["Kalman_mean"].values,
+                                                           df["Kalman_mean"].values,
+                                                           **kwargs )
         lows_df, highs_df = df.iloc[low_idx], df.iloc[high_idx]
         # defining 'Position_side' column
         df["Position_side"] = 0
@@ -100,23 +115,47 @@ class Kalmanfilter(_StrategyBASE):
         
         for i in range(n_next_candles):
             df_next_candle = pd.concat([ dataframe[column], 
-                             dataframe.shift(i+1)[["upper_limit", "lower_limit",
-                                                 "Position_side"]]], axis=1)
+            dataframe.shift(i+1)[["upper_limit", "lower_limit",
+                                    "Position_side"]]], axis=1)
             # if these two conditions satisfied next candle will have same position signal
             upper_cond = df_next_candle[column]<=df_next_candle["upper_limit"]
             lower_cond = df_next_candle[column]>=df_next_candle["lower_limit"]
             
             dataframe.loc[upper_cond & lower_cond,
                           "Position_side"] = df_next_candle["Position_side"]
-        
+            
         if kwargs.get("inplace", True): self.df = dataframe 
         return dataframe
-
     
+    
+    def add_adx_filter(self, dataframe: pd.DataFrame, remove_below:int = 25, window:int = 14,
+                       high_col:str = "High", low_col:str = "Low", close_col:str = "Close"):
+        """removes positions with low adx value.
+
+        Args:
+            window (int, optional): adx window size. Defaults to 14.
+        """        
+        dataframe["ADX"] = ta.trend.ADXIndicator(high=dataframe[high_col], 
+                            low=dataframe[low_col], close=dataframe[close_col], 
+                            window=window, fillna=False).adx()
+        
+        dataframe.loc[dataframe["ADX"] < remove_below, "Position_side"] = 0
+        return dataframe 
+    
+    
+        
     
     def plot(self, **kwargs):
-        fig = super().plot(timeframe = self.timeframe ,**kwargs)
-        fig.add_scatter(x = self.df.index, y = self.df["Kalman"],  
-                        line_shape='spline', line={"color":kwargs.get("color", "black")},
-                        name = "Kalman")
+        fig = super().plot(timeframe = self.timeframe, plot_entries=False ,**kwargs)
+        
+        fig.add_scatter(x = self.df.index, y = self.df["Kalman_mean"],  
+        line_shape='spline', line={"color":kwargs.get("color", "black")},
+        name = "Kalman_mean")
+
+        for side, grp_df in self.df.groupby("Position_side"):
+            if side == 0: continue
+            for ind, row in grp_df.iterrows():
+                self.plotter.draw_circle(fig, [ind, row["Kalman_high" if side == 1 else "Kalman_low"]], 
+                                        fillcolor = "blue" if side == 1 else "yellow", 
+                                        **kwargs )
         return fig

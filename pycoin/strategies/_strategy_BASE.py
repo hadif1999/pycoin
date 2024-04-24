@@ -53,17 +53,18 @@ class _StrategyBASE:
         if "Position_side" not in self.df.columns: self.df['Position_side'] = 0
             
     
-    def plot(self, **kwargs):
+    def plot(self, plot_entries:bool = False , **kwargs):
         from pycoin.plotting import Market_Plotter
         self.plotter = Market_Plotter(self.df)
         fig = self.plotter.plot_market(**kwargs)
         
-        for side, grp_df in self.df.groupby("Position_side"):
-            if side == 0: continue
-            for ind, row in grp_df.iterrows():
-                self.plotter.draw_circle(fig, [ind, row["Kalman"]], 
-                                        fillcolor = "blue" if side == 1 else "yellow", 
-                                        **kwargs )
+        if plot_entries:
+            for side, grp_df in self.df.groupby("Position_side"):
+                if side == 0: continue
+                for ind, row in grp_df.iterrows():
+                    self.plotter.draw_circle(fig, [ind, row["Close"]], 
+                                            fillcolor = "blue" if side == 1 else "yellow", 
+                                            **kwargs )
         return fig
 
     
