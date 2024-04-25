@@ -46,9 +46,7 @@ class Kalmanfilter(_StrategyBASE):
     
       # main function to get filtered signal
     def generate_signal(self, dataframe:pd.DataFrame,
-                        filter_column_high:str = "High",
-                        filter_column_low:str = "Low",
-                        filter_column_mean:str = "Close",
+                        filter_column:str = "Close",
                         **kwargs):
         """generates 'LONG', 'SHORT' signal by finding high and lows and place buy orders
         at lows and and sell orders at highs. 
@@ -66,16 +64,10 @@ class Kalmanfilter(_StrategyBASE):
         df = dataframe.copy()
         df.Name = getattr(dataframe, "Name", "")
         # filter given data by Kalman filter
-        df["Kalman_high"] = self.filter(df[filter_column_high], **kwargs)
-        df["Kalman"] = self.filter(df[filter_column_mean], **kwargs)
-        df["Kalman_low"] = self.filter(df[filter_column_low], **kwargs)
-        
-        df["Kalman_mean"] = df[["Kalman_low", "Kalman", "Kalman_high"]].mean(axis=1)
+        df["Kalman"] = self.filter(df[filter_column], **kwargs)
         
         # finding high and lows of filtered data
-        high_idx, low_idx = Utils.get_signal_HighsLows_ind(df["Kalman_mean"].values,
-                                                           df["Kalman_mean"].values,
-                                                           **kwargs )
+        high_idx, low_idx = Utils.get_signal_HighsLows_ind(df["Kalman"].values, **kwargs)
         lows_df, highs_df = df.iloc[low_idx], df.iloc[high_idx]
         # defining 'Position_side' column
         df["Position_side"] = 0
@@ -148,14 +140,14 @@ class Kalmanfilter(_StrategyBASE):
     def plot(self, **kwargs):
         fig = super().plot(timeframe = self.timeframe, plot_entries=False ,**kwargs)
         
-        fig.add_scatter(x = self.df.index, y = self.df["Kalman_mean"],  
+        fig.add_scatter(x = self.df.index, y = self.df["Kalman"],  
         line_shape='spline', line={"color":kwargs.get("color", "black")},
-        name = "Kalman_mean")
-
+        name = "Kalman")
+        
         for side, grp_df in self.df.groupby("Position_side"):
             if side == 0: continue
             for ind, row in grp_df.iterrows():
-                self.plotter.draw_circle(fig, [ind, row["Kalman_high" if side == 1 else "Kalman_low"]], 
+                self.plotter.draw_circle(fig, [ind, row["Kalman"]], 
                                         fillcolor = "blue" if side == 1 else "yellow", 
                                         **kwargs )
         return fig

@@ -257,12 +257,15 @@ def to_HeikinAshi(df: pd.DataFrame) -> pd.DataFrame:
     return df_HA
 
 
-def get_signal_HighsLows_ind(high_data:np.ndarray, low_data:np.ndarray, 
-                             order:int = 20, mode:str = "clip", **kwargs)-> dict[str, list[int]]:
-    highs_ind_arr = argrelextrema(data = high_data, comparator= np.greater,
-                                  order = order, mode = mode )[0]
-    lows_ind_arr = argrelextrema(data = low_data, comparator= np.less,
-                                  order = order, mode = mode )[0]
+def get_signal_HighsLows_ind(data:np.ndarray, 
+                             lows_order:int = 20,
+                             highs_order:int = 15,
+                             mode:str = "clip", **kwargs)-> dict[str, list[int]]:
+    
+    highs_ind_arr = argrelextrema(data = data, comparator= np.greater,
+                                  order = highs_order, mode = mode )[0]
+    lows_ind_arr = argrelextrema(data = data, comparator= np.less,
+                                  order = lows_order, mode = mode )[0]
     return highs_ind_arr, lows_ind_arr
     
     

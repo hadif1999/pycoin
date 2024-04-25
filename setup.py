@@ -76,7 +76,7 @@ base_requirements = [
 
 setup(
     name='pythoncoin',
-    version='v2.0.3',
+    version='v2.0.4',
     packages=find_packages(),
     license="MIT",
     author='Hadi Fathipour',
