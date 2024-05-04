@@ -2,6 +2,7 @@ from typing import Literal
 import pandas as pd
 from pycoin import KlineData_Fetcher
 import datetime as dt
+import plotly.graph_objects as go
 
 
 class _StrategyBASE:
@@ -59,12 +60,18 @@ class _StrategyBASE:
         fig = self.plotter.plot_market(**kwargs)
         
         if plot_entries:
-            for side, grp_df in self.df.groupby("Position_side"):
-                if side == 0: continue
-                for ind, row in grp_df.iterrows():
-                    self.plotter.draw_circle(fig, [ind, row["Close"]], 
-                                            fillcolor = "blue" if side == 1 else "yellow", 
-                                            **kwargs )
+            entries_grp = self.df.groupby("Position_side")
+            entries, exits = entries_grp.get_group(1), entries_grp.get_group(-1)
+        
+            fig.add_trace(go.Scatter(mode="markers",x=entries.index, y=entries["Close"],
+            marker=dict(size=kwargs.get("size", 1),
+                        color = kwargs.get("long_color", "green"), symbol="triangle-up",
+                        line=dict(width=0.1, color="black")), name = "long", **kwargs ) )
+            
+            fig.add_trace(go.Scatter(mode="markers",x=exits.index, y=exits["Close"],
+            marker=dict(size=kwargs.get("size", 1),
+                        color = kwargs.get("short_color", "red"), symbol="triangle-down",
+                        line=dict(width=0.1, color="black")), name = "short", **kwargs ))
         return fig
 
     

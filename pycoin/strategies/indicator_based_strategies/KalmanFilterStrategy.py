@@ -133,9 +133,7 @@ class Kalmanfilter(_StrategyBASE):
         
         dataframe.loc[dataframe["ADX"] < remove_below, "Position_side"] = 0
         return dataframe 
-    
-    
-        
+
     
     def plot(self, **kwargs):
         fig = super().plot(timeframe = self.timeframe, plot_entries=False ,**kwargs)
@@ -144,10 +142,6 @@ class Kalmanfilter(_StrategyBASE):
         line_shape='spline', line={"color":kwargs.get("color", "black")},
         name = "Kalman")
         
-        for side, grp_df in self.df.groupby("Position_side"):
-            if side == 0: continue
-            for ind, row in grp_df.iterrows():
-                self.plotter.draw_circle(fig, [ind, row["Kalman"]], 
-                                        fillcolor = "blue" if side == 1 else "yellow", 
-                                        **kwargs )
+        self.plotter.plot_HighLows("Position_side", "Kalman",
+                                   highs_shape="triangle-up", lows_shape="triangle-down", **kwargs)        
         return fig

@@ -12,11 +12,22 @@ import math
 
 class Market_Plotter: 
         
-    def __init__(self, OHLCV_df:pd.DataFrame) -> None:
+    def __init__(self, OHLCV_df:pd.DataFrame, **kwargs) -> None:
         self.df = OHLCV_df
         Utils.check_isStandard_OHLCV_dataframe(OHLCV_df)        
         self.fig = self.empty_figure()
         self.Name = getattr(self.df, "Name", "")
+        
+        self.fig_config = { "slider" : kwargs.get("slider", False),
+                           "fig_size": kwargs.get("fig_size", [1100,600]) }
+         
+        self.show_config={'modeBarButtonsToAdd': ['drawline',
+                                        'drawopenpath',
+                                        'drawclosedpath',
+                                        'drawcircle',
+                                        'drawrect',
+                                        'eraseshape'
+                                       ]}
 
     
     
@@ -46,7 +57,7 @@ class Market_Plotter:
     
     def plot_market(self,*, plot_by_grp:bool = False, 
                     grp:dict[str, int] = {"year":2023, "month":1, "day":1},
-                    show_fig:bool = False, inplace: bool = True, **kwargs):
+                    show_fig:bool = False, **kwargs):
         """plots data as candlestick format. 
 
         Args:
@@ -68,8 +79,8 @@ class Market_Plotter:
         fig = go.Figure(  data = [candleStick_data] )
         
         # add titles and drag modes
-        slider = kwargs.get("slider", False)
-        fig_size = kwargs.get("fig_size", [1100,600])
+        slider = self.fig_config.get("slider")
+        fig_size = self.fig_config.get("fig_size")
         
         assert isinstance(slider, bool), "slider param must be bool type."
         assert isinstance(fig_size, list), " 'fig_size' must be a 2 element list"
@@ -81,13 +92,19 @@ class Market_Plotter:
                           width = fig_size[0], height = fig_size[1],
                           dragmode = "pan", margin=dict(l=15, r=10, t=35, b=12)
                          )
-        if show_fig: fig.show()
-        if inplace: self.fig = fig
+        if show_fig: fig.show(config = self.show_config)
+        self.fig = fig
         return fig    
     
     
+    def show(self):
+        self.fig.show(config = self.show_config)
+        
+    def reset(self, **kwargs):
+        self.fig = self.empty_figure(**kwargs)
     
-    def draw_line(self, fig:go.Figure, p0:List[float], p1:List[float], Color:str = "orange",
+    
+    def add_line(self, p0:List[float], p1:List[float], Color:str = "orange",
                   width_:int = 2, text_:str = "", text_position:str = "top right", **kwargs):
         """draws a line on given plotly figure obj starting with point p0:(x0,y0) to p1: (x1,y1)
 
@@ -105,18 +122,16 @@ class Market_Plotter:
         line_ = dict(color = Color, width = width_)
         label_ = dict(text = text_, textposition = text_position) 
         
-        fig.add_shape(type="line", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1], 
-                      line = line_ , label = label_ , editable= True) 
+        self.fig.add_shape(type="line", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1], 
+                           line = line_ , label = label_ , editable= True) 
         
-        if "line_dash" in kwargs.keys(): 
+        if "line_dash" in kwargs: 
             line_["dash"] = kwargs["line_dash"]
-            fig.update_shapes(line = line_ )
+            self.fig.update_shapes(line = line_ )
         
 
-    
-    
-    def draw_box(self, fig:go.Figure, p0:List[float], p1:List[float], 
-                 fill_color:str = "LightSkyBlue"  ):
+    def add_box(self, p0:List[float], p1:List[float], 
+                 fill_color:str = "LightSkyBlue", **kwargs  ):
         """draw a rectangle with two point as p0 , p1 on input plotly object. each p0,p1 is a list as [x,y]
 
         Args:
@@ -126,78 +141,53 @@ class Market_Plotter:
             fill_color (str, optional): inner color of rectangle. Defaults to "LightSkyBlue".
         """        
         
-        fig.add_shape( type = "rect", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1],
-                      fillcolor = fill_color, layer = "below" , opacity = 0.5, editable = True
+        self.fig.add_shape( type = "rect", x0 = p0[0], y0 = p0[1], x1 = p1[0], y1 = p1[1],
+                      fillcolor = fill_color, 
+                      layer = kwargs.get("layer", "below") , 
+                      opacity = kwargs.get("opacity", 0.5),
+                      editable = True
                      )
         
         
+    def add_hline(self, price:float, color:str = "red", txt:str = "",
+                  txt_position:str = "top right", width:int = 2,
+                  font_size:int = 20, **kwargs):
+        line_ = dict(color = color, width = width)
+        label_ = dict(text = txt, textposition = txt_position,
+                      font = dict(color="black", family="Courier New, monospace",
+                                  size = font_size))
+        self.fig.add_hline(price, line = line_, label = label_, editable = True,
+                           name = kwargs.get("name","line"), **kwargs)
         
         
-    def draw_static_line(self, fig:go.Figure, side:str, c:float, 
-                         Color:str = "red", text:str = "", text_position:str = "top right", 
-                         width:int=2, font_size = 20, **kwargs ):
+    def add_vline(self, time:str|dt.datetime, color:str = "red", txt:str = '',
+                  txt_position:str = "top right", width:int = 2,
+                  font_size:int = 20, **kwargs):
+        line_ = dict(color = color, width = width)
+        label_ = dict(text = txt, textposition = txt_position,
+                      font = dict(color="black", family="Courier New, monospace",
+                                  size = font_size))
+        self.fig.add_hline(time, line = line_, label = label_, editable = True,
+                           name = kwargs.get("name","line"), **kwargs)
+    
+    
+    def add_vrect(self, time1:str|dt.datetime, time2:str|dt.datetime, 
+                  color = "green", txt:str = "", txt_position:str = "top right", **kwargs):
+        self.fig.add_vrect(x0 = time1, x1 = time2, fillcolor = color,
+                      layer = "below" , opacity = kwargs.get("opacity", 0.5), 
+                      annotation_text = txt,
+                      annotation_position = txt_position, editable= True, **kwargs)
         
-        """draw static lines with its value as c and a plotly object.
-
-        Args:
-                fig = plotly figure object
-                side = "h" for horizontal line and 'v' for vertical line.
-                Color : line color
-                text: a text on line
-                text_position : position of text on line
-        """        
-        line_ = dict(color = Color, width = width)
-        label_ = dict(text = text, textposition = text_position, font = dict(color="black",
-                                                                             family="Courier New, monospace",
-                                                                             size = font_size))
-        if side in ["h", "hor"]:  fig.add_hline( y = c, line = line_ , 
-                                                label = label_,
-                                                editable = True,
-                                                name = kwargs.get("name","") )
-        
-        elif side in ["v", "ver"]: fig.add_vline(x = c, line = line_ , label = label_, 
-                                                 editable = True, name = kwargs.get("name",""))
-        
-        else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal line or
-                              'v' or 'ver' to draw vertical line.
-                              """)
-        if "line_dash" in kwargs.keys(): fig.update_shapes(line = dict(dash = kwargs["line_dash"]))
-       
+    def add_hrect(self, price1: float, price2: float, color = "green",
+                  txt:str = "", txt_position:str = "top right", **kwargs):
+        self.fig.add_hrect(x0 = price1, x1 = price2, fillcolor = color,
+                      layer = "below" , opacity = kwargs.get("opacity", 0.5), 
+                      annotation_text = txt,
+                      annotation_position = txt_position, editable= True, **kwargs)
         
         
-        
-    def draw_static_box(self, fig:go.Figure, side:str, c0:str,c1:str ,
-                         Color:str = "green", text:str = "", text_position:str = "top right" ):
-        """draw a static box in a range of x or y coordinates
-
-        Args:
-            fig (go.Figure): plotly figure obj
-            side (str): make box in x or y coord ('h' or 'hor' for horizontal box, 'v' or 'ver' for vertical box)
-            c0 (str): starting coord of box
-            c1 (str): final coord of box
-            Color (str, optional): color of box. Defaults to "green".
-            text (str, optional): add a text to box . Defaults to "".
-            text_position (str, optional): position of text for box. Defaults to "top right".
-        """        
-        if side in ["hor", 'h']: fig.add_hrect(y0 = c0, y1 = c1, fillcolor = Color,
-                                            layer = "below" , opacity = 0.5, 
-                                            annotation_text = text,
-                                            annotation_position = text_position, editable = True
-                                                       )
-        
-        if side in ["ver", 'v']: fig.add_vrect(x0 = c0, x1 = c1, fillcolor = Color,
-                                            layer = "below" , opacity = 0.5, 
-                                            annotation_text = text,
-                                            annotation_position = text_position, editable= True
-                                                      )
-        
-        else: raise Exception("""input side values can be 'h' or 'hor' to draw horizontal box or
-                        'v' or 'ver' to draw vertical box.
-                        """)
-        
-        
-    def draw_circle(self, fig:go.Figure, center:List, R:float = 0.0015, fillcolor:str = "green", 
-                    timeframe = "5m", **kwargs):
+    def add_circle(self, center:List, R:float = 1, fillcolor:str = "green", 
+                   timeframe = "5m", y_len = 3,  **kwargs):
         
         """draws a circle at entered center which is a two element list to R radius 
 
@@ -213,17 +203,18 @@ class Market_Plotter:
             x_c = str(x_c.to_pydatetime())
         
         x_center = dt.datetime.strptime(x_c , '%Y-%m-%d %H:%M:%S')
-        dx = timeframe_to_seconds(timeframe)*3
-        y_scale = math.log10(timeframe_to_seconds(timeframe)) + 1
-        y_scale2 = math.log10(center[1])+1
+        dx = timeframe_to_seconds(timeframe)*y_len
         x_0 = dt.datetime.fromtimestamp(int(x_center.timestamp() - dx ))
         x_1 = dt.datetime.fromtimestamp(int(x_center.timestamp() + dx ))        
-        y_0 = center[1]- y_scale * R 
-        y_1 = center[1]+ y_scale * R 
         
-        fig.add_shape(type = "circle", fillcolor = fillcolor, layer = "below", opacity = 0.6,
-                      xref="x", yref="y", x0 = x_0  , y0 = y_0, 
-                      x1= x_1 , y1 = y_1, editable = True )
+        y_0 = center[1]- math.log(center[1]) * R 
+        y_1 = center[1]+ math.log(center[1]) * R 
+        
+        self.fig.add_shape(type = "circle", fillcolor = fillcolor, 
+                           layer = "below",
+                           opacity = kwargs.get("opacity", 0.6),
+                           xref="x", yref="y", x0 = x_0  , y0 = y_0, 
+                           x1= x_1 , y1 = y_1, editable = True )
         
         
     
@@ -247,61 +238,23 @@ class Market_Plotter:
         
     
     
-    def remove_all_shapes( self, fig:go.Figure ):
+    def remove_all_shapes( self ):
         """remove all shapes from figure object
 
         Args:
             fig (go.Figure): _description_
         """        
-        fig.layout.shapes = []
+        self.fig.layout.shapes = []
         
         
         
-    def highlight_candle_range(self, fig:go.Figure, from_time:str, to_time:str, 
-                            decrease_color:str = "lightred", increase_color:str = "lightblue" ):
-        """highlight a range of candles from given time to final time
-
-        Args:
-            fig (go.Figure): plotly figure object
-            from_time (str): start time
-            to_time (str): end time 
-            decrease_color (str, optional): color of decreasing candles. Defaults to "lightred".
-            increase_color (str, optional): color of increasing candles. Defaults to "lightblue".
-        """        
-        df_ = self.df.copy()
-        df_.Name = getattr(self.df, "Name", "")
-        df_temp = df_.loc[ from_time : to_time ]
-        
-        highlight_candle = self.df2candlestick(df_temp, name = "highlight", increase_color = increase_color,
-                                                    decrease_color = decrease_color)
-        
-        fig.add_trace(highlight_candle)
-        fig.update_layout(showlegend=False)
-        
-    
-    
-    
-    def highlight_single_candle(self, fig:go.Figure, time:str, color:str = "blue"):
-        """highlight a single candle at given time
-
-        Args:
-            fig (go.Figure): plotly figure object
-            time (str): given time
-            color (str, optional): desired color of candle. Defaults to "blue".
-        """        
-        self.highlight_candle_range(fig, time, time , color , color)  
-        fig.update_layout(showlegend=False)        
-        
-        
-        
-    def empty_figure(self, **kwargs):
+    def empty_figure(self, inplace: bool = False, **kwargs):
         """make a empty figure
 
         Returns:
             go.Figure: plotly figure object
         """        
         fig = go.Figure()
-        
         # add titles and drag modes
         slider = kwargs.get("slider",False)
         fig_size = kwargs.get("fig_size", [1100,600] )
@@ -313,18 +266,17 @@ class Market_Plotter:
                           width = fig_size[0], height = fig_size[1],
                           dragmode = "pan",  
                           margin=dict(l=15, r=10, t=35, b=12))
-            
+        if inplace: self.fig = fig
         return fig
     
     
     
-    def draw_trend_highlight(self, column:str = "MA_trend",
-                            dataframe:pd.DataFrame = pd.DataFrame(), * ,
-                            up_trend_color:str = "blue",
-                            down_trend_color:str = "red",
-                            side_trend_color:str = "yellow" , 
-                            add_high_lows_shapes:bool = False,
-                            **kwargs):
+    def plot_trend(self, column:str = "MA_trend", * ,
+                  up_trend_color:str = "blue",
+                  down_trend_color:str = "red",
+                  side_trend_color:str = "yellow", 
+                  size = 1,
+                  **kwargs):
         """visualizes the evaluated trend with highlighted candles.
 
         Args:
@@ -336,49 +288,30 @@ class Market_Plotter:
             down_trend_color (str, optional): color of down_trend candles. Defaults to "red".
             side_trend_color (str, optional): color of side_trend candles. Defaults to "yellow".
         """        
-        
-        fig = self.empty_figure(fig_size = kwargs.get("fig_size",[1100,600]),
-                                slider = kwargs.get("slider",False))
-        
-        if dataframe.empty: 
-            df_ = self.df.copy()
-            df_.Name = getattr(self.df, "Name", "")
-        else: 
-            df_ = dataframe.copy()
-            df_.Name = getattr(self.df, "Name", "")
-            
-            
-            
-        if add_high_lows_shapes:
-            shapes = self.plot_high_lows(dataframe = df_,
-                                        return_only_shapes = True,
-                                        R = kwargs.get("R",1000),
-                                        y_scale= kwargs.get("y_scale",0.1))
-            fig.layout.shapes = shapes        
-        
-        
-        if "Datetime" not in df_.columns: df_["Datetime"] = df_.index
-        trend_grps = df_.copy().groupby(column, sort = True)
-        
+        trend_grp = self.df.groupby(column)
         colors = [down_trend_color , side_trend_color , up_trend_color]
-        trend_names = list(trend_grps.groups.keys())
-        colors_dict = {key:color for key,color in zip(trend_names,colors)}
+        shapes = ["triangle-down", "triangle-right", "triangle-up"]
+        trend_labels = sorted(list(trend_grp.groups.keys()))
+        trend_names = ["downtrend", "sideway trend", "uptrend"]
           
-        for name,grp in trend_grps :
-            for i,row in grp.iterrows():
-                self.highlight_single_candle(fig, row["Datetime"], color = colors_dict[name] )
-        fig.update_layout( title = f"{self.Name}, trend evaluated with: {column}",
-                          yaxis_title = self.Name
-                         )
-        return fig
+        for label, color, shape, name in zip(trend_labels, colors, shapes, trend_names):
+            trend_df = trend_grp.get_group(label)
+            yaxis = trend_df[["Close", "Open"]].mean(axis=1)
+            self.fig.add_trace(go.Scatter(mode="markers",x=yaxis.index, 
+            y=yaxis, marker=dict(size=size, color = color, symbol= shape,
+            line=dict(width=0.1, color="black", )), name = name, **kwargs ) )
+                            
+        self.fig.update_layout( title = f"{self.Name}, trend evaluated with: {column}",
+                          yaxis_title = self.Name)
+        return self.fig
         
         
         
     
-    def plot_high_lows(self, dataframe: pd.DataFrame, HighLows_col = "Pivot" ,
-                       min_color:str = "red", max_color:str = "green" ,
-                        R:int = 400, y_scale:float = 0.1, *, 
-                        return_only_shapes:bool = False, **kwargs):
+    def plot_HighLows(self, HighLows_col = "Pivot", plot_onColumn:str = "Close",
+                      low_color:str = "red", high_color:str = "green",
+                      low_label = -1, high_label = 1, highs_shape = "circle",
+                      lows_shape = "circle", size:int = 1, **kwargs):
         """adds circle shapes for highs and lows for visualizing.
 
         Args:
@@ -392,32 +325,23 @@ class Market_Plotter:
             ValueError: _description_
         """        
 
-        fig = self.plot_market(
-                                 plot_by_grp = False,
-                                 fig_size = kwargs.get("fig_size",[1100,600]),
-                                 slider = kwargs.get("slider",False)
-                                )
+        hl_grp = self.df.groupby(HighLows_col)
+        highs_df = hl_grp.get_group(high_label) 
+        lows_df = hl_grp.get_group(low_label)
         
-        df_ = dataframe.copy()
-        df_.Name = getattr(self.df, "Name", "")
-        if "Datetime" not in df_.columns: df_["Datetime"] = df_.index
-        highlows_grp = df_.groupby(HighLows_col)
-        highs = highlows_grp.get_group(1)[["Datetime","High"]].values.tolist()
-        lows = highlows_grp.get_group(-1)[["Datetime","Low"]].values.tolist()
-            
-        for low_coord in lows:
-            self.draw_circle(fig = fig, center = low_coord, R = R , fillcolor = min_color , y_scale = y_scale )
-            
-        for high_coord in highs:
-            self.draw_circle(fig = fig, center = high_coord, R = R , fillcolor = max_color , y_scale = y_scale )
-
-        fig.update_layout(
-                          title = f"{self.Name}, date -> from: {self.df.index[0]}   to: {self.df.index[-1]}",
-                          yaxis_title = self.Name
-                         )
+        self.fig.add_trace(go.Scatter(mode="markers",x=highs_df.index, y=highs_df[plot_onColumn],
+        marker=dict(size=size, color = high_color, symbol=highs_shape,
+                    line=dict(width=0.1, color="black")), name = "high", **kwargs ) )
+        
+        self.fig.add_trace(go.Scatter(mode="markers",x=lows_df.index, y=lows_df[plot_onColumn],
+        marker=dict(size=size, symbol=lows_shape, color = low_color, 
+                    line=dict(width=0.1, color="black")), name = "low", **kwargs) )
+        
+        self.fig.update_layout(
+        title = f"{self.Name}, date->from: {self.df.index[0]}   to: {self.df.index[-1]}",
+        yaxis_title = self.Name )
                     
-        if return_only_shapes: return fig.layout.shapes
-        return fig
+        return self.fig
         
     
         
