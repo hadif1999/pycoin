@@ -12,7 +12,7 @@ import math
 
 class Market_Plotter: 
         
-    def __init__(self, OHLCV_df:pd.DataFrame, **kwargs) -> None:
+    def __init__(self, OHLCV_df:pd.DataFrame = pd.DataFrame(), **kwargs) -> None:
         self.df = OHLCV_df
         Utils.check_isStandard_OHLCV_dataframe(OHLCV_df)        
         self.fig = self.empty_figure()
@@ -299,7 +299,7 @@ class Market_Plotter:
             yaxis = trend_df[["Close", "Open"]].mean(axis=1)
             self.fig.add_trace(go.Scatter(mode="markers",x=yaxis.index, 
             y=yaxis, marker=dict(size=size, color = color, symbol= shape,
-            line=dict(width=0.1, color="black", )), name = name, **kwargs ) )
+            line=dict(width=0.1, color="black", )), name = name ) )
                             
         self.fig.update_layout( title = f"{self.Name}, trend evaluated with: {column}",
                           yaxis_title = self.Name)
@@ -311,6 +311,7 @@ class Market_Plotter:
     def plot_HighLows(self, HighLows_col = "Pivot", plot_onColumn:str = "Close",
                       low_color:str = "red", high_color:str = "green",
                       low_label = -1, high_label = 1, highs_shape = "circle",
+                      high_name = "high", low_name = "low",
                       lows_shape = "circle", size:int = 1, **kwargs):
         """adds circle shapes for highs and lows for visualizing.
 
@@ -324,18 +325,20 @@ class Market_Plotter:
         Raises:
             ValueError: _description_
         """        
-
+        unique_keys = self.df[HighLows_col].unique()
         hl_grp = self.df.groupby(HighLows_col)
-        highs_df = hl_grp.get_group(high_label) 
-        lows_df = hl_grp.get_group(low_label)
         
-        self.fig.add_trace(go.Scatter(mode="markers",x=highs_df.index, y=highs_df[plot_onColumn],
-        marker=dict(size=size, color = high_color, symbol=highs_shape,
-                    line=dict(width=0.1, color="black")), name = "high", **kwargs ) )
+        if high_label in unique_keys: 
+            highs_df = hl_grp.get_group(high_label) 
+            self.fig.add_trace(go.Scatter(mode="markers",x=highs_df.index,y=highs_df[plot_onColumn],
+            marker=dict(size=size, color = high_color, symbol=highs_shape,
+            line=dict(width=0.1, color="black")), name = high_name ) )
         
-        self.fig.add_trace(go.Scatter(mode="markers",x=lows_df.index, y=lows_df[plot_onColumn],
-        marker=dict(size=size, symbol=lows_shape, color = low_color, 
-                    line=dict(width=0.1, color="black")), name = "low", **kwargs) )
+        if low_label in unique_keys:
+            lows_df = hl_grp.get_group(low_label)
+            self.fig.add_trace(go.Scatter(mode="markers",x=lows_df.index, y=lows_df[plot_onColumn],
+            marker=dict(size=size, symbol=lows_shape, color = low_color, 
+            line=dict(width=0.1, color="black")), name = low_name) )
         
         self.fig.update_layout(
         title = f"{self.Name}, date->from: {self.df.index[0]}   to: {self.df.index[-1]}",

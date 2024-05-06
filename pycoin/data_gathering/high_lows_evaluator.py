@@ -4,7 +4,7 @@ sys.setrecursionlimit(1000)
 import numpy as np
 import datetime as dt
 from scipy.signal import argrelextrema
-from pycoin.data_gathering.trend_filters import fill_between_pivots, remove_less_than_min_time
+from pycoin.data_gathering.trend_filters import fill_between_same_exterma, remove_less_than_min_time
 
 
 SUGGESTED_CANDLE_RANGE = {
@@ -56,11 +56,11 @@ def get_market_High_Lows(dataframe:pd.DataFrame,
     if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_
                                                                                 ,datetime_col,high_col,
                                                                                 low_col, min_time_dist)
-    if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_, high_col,low_col)
+    if fill_between_two_same: max_idx, min_idx = fill_between_same_exterma(max_idx, min_idx, df_, high_col,low_col)
     if remove_under_min_time_dist: max_idx, min_idx = remove_less_than_min_time(max_idx, min_idx, df_
                                                                                 ,datetime_col,high_col,
                                                                                 low_col, min_time_dist)
-    if fill_between_two_same: max_idx, min_idx = fill_between_pivots(max_idx, min_idx, df_, high_col,low_col)
+    if fill_between_two_same: max_idx, min_idx = fill_between_same_exterma(max_idx, min_idx, df_, high_col,low_col)
     max_idx.sort()
     min_idx.sort()
     

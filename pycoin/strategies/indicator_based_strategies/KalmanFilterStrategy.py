@@ -5,6 +5,7 @@ from pykalman import KalmanFilter
 import pandas as pd
 import numpy as np
 import ta
+from pycoin.data_gathering.trend_filters import remove_less_than_min_time, fill_between_same_exterma
 
 
 
@@ -69,10 +70,15 @@ class Kalmanfilter(_StrategyBASE):
         # finding high and lows of filtered data
         high_idx, low_idx = Utils.get_signal_HighsLows_ind(df["Kalman"].values, **kwargs)
         lows_df, highs_df = df.iloc[low_idx], df.iloc[high_idx]
-        # defining 'Position_side' column
-        df["Position_side"] = 0
-        df.loc[highs_df.index, "Position_side"] = -1
-        df.loc[lows_df.index, "Position_side"] = 1
+        if "HighLow" not in df.columns: df["HighLow"] = 0  
+        df.loc[highs_df.index, "HighLow"] = 1
+        df.loc[lows_df.index, "HighLow"] = -1
+        df = fill_between_same_exterma(df, "HighLow", low_column="Kalman", high_column="Kalman")
+        
+        # defining 'Position_side' column to define entries and exits
+        if "Position_side" not in df.columns: df["Position_side"] = 0
+        df.loc[df["HighLow"] == -1, "Position_side"] = 1
+        df.loc[df["HighLow"] == 1, "Position_side"] = -1
         if kwargs.get("inplace", True): self.df = df
         return df
     
@@ -136,12 +142,30 @@ class Kalmanfilter(_StrategyBASE):
 
     
     def plot(self, **kwargs):
-        fig = super().plot(timeframe = self.timeframe, plot_entries=False ,**kwargs)
+        fig = super().plot(plot_entries=False ,**kwargs)
         
         fig.add_scatter(x = self.df.index, y = self.df["Kalman"],  
         line_shape='spline', line={"color":kwargs.get("color", "black")},
         name = "Kalman")
         
         self.plotter.plot_HighLows("Position_side", "Kalman",
-                                   highs_shape="triangle-up", lows_shape="triangle-down", **kwargs)        
+                                   highs_shape="triangle-up", lows_shape="triangle-down",
+                                   high_name="enter_long", low_name="enter_short",
+                                   **kwargs
+                                   )        
         return fig
+    
+    
+    
+    def run_real_backtest(self, dataframe: pd.DataFrame, filter_column:str = "Close", **kwargs):
+        
+        for i in range(len(dataframe)):
+            if i <= 5: continue
+            df_temp = dataframe.iloc[:i]
+            self.df = self.generate_signal(df_temp, filter_column, **kwargs)
+            self.plotter.fig = super().plot(new_plot = False, plot_entries = True, **kwargs)
+            
+        return dataframe
+            
+            
+        

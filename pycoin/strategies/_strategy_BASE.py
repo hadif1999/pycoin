@@ -54,24 +54,29 @@ class _StrategyBASE:
         if "Position_side" not in self.df.columns: self.df['Position_side'] = 0
             
     
-    def plot(self, plot_entries:bool = False , **kwargs):
+    def plot(self, plot_entries:bool = False, **kwargs):
         from pycoin.plotting import Market_Plotter
         self.plotter = Market_Plotter(self.df)
         fig = self.plotter.plot_market(**kwargs)
         
         if plot_entries:
             entries_grp = self.df.groupby("Position_side")
-            entries, exits = entries_grp.get_group(1), entries_grp.get_group(-1)
-        
-            fig.add_trace(go.Scatter(mode="markers",x=entries.index, y=entries["Close"],
-            marker=dict(size=kwargs.get("size", 1),
-                        color = kwargs.get("long_color", "green"), symbol="triangle-up",
-                        line=dict(width=0.1, color="black")), name = "long", **kwargs ) )
+            unique_keys = self.df["Position_side"].unique()
             
-            fig.add_trace(go.Scatter(mode="markers",x=exits.index, y=exits["Close"],
-            marker=dict(size=kwargs.get("size", 1),
-                        color = kwargs.get("short_color", "red"), symbol="triangle-down",
-                        line=dict(width=0.1, color="black")), name = "short", **kwargs ))
+            if 1 in unique_keys:
+                entries = entries_grp.get_group(1)
+                fig.add_trace(go.Scatter(mode="markers",x=entries.index, y=entries["Close"],
+                marker=dict(size=kwargs.get("size", 1),
+                            color = kwargs.get("long_color", "green"), symbol="triangle-up",
+                            line=dict(width=0.1, color="black")), name = "enter long" ) )
+                
+            if -1 in unique_keys:
+                exits = entries_grp.get_group(-1)
+                fig.add_trace(go.Scatter(mode="markers",x=exits.index, y=exits["Close"],
+                marker=dict(size=kwargs.get("size", 1),
+                            color = kwargs.get("short_color", "red"), symbol="triangle-down",
+                            line=dict(width=0.1, color="black")), name = "enter short"))
+        
         return fig
 
     

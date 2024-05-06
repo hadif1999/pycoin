@@ -216,13 +216,15 @@ def to_standard_OHLCV_dataframe(df: pd.DataFrame):
     return df_
 
 
-def check_isStandard_OHLCV_dataframe(dataframe:pd.DataFrame) -> None:
+def check_isStandard_OHLCV_dataframe(dataframe:pd.DataFrame, raise_empty: bool = False) -> None:
     """standard OHLCV dataframe in this framework consists of 'Open', 'High', 
         'Low', 'Close', 'Volume' and datetime(pd.Timestamp) as index.
     Args:
         dataframe (pd.DataFrame): _description_
     """    
-    if dataframe.empty: raise ValueError("OHLCV dataframe can't be empty")
+    if dataframe.empty:
+        if raise_empty: raise ValueError("OHLCV dataframe can't be empty")
+        else: return 
     assert "date" in " ".join([dataframe.index.dtype.name, dataframe.index.name]).lower() \
     , "dataframe index type must be pd.Timestamp(datetime)"
     cols = ["Open", "High", "Low", "Close", "Volume"]

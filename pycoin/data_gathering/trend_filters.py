@@ -1,63 +1,41 @@
 import pandas as pd
 import datetime as dt
 
-def fill_between_pivots( max_idx:list, min_idx:list , df_:pd.DataFrame, high_col_name:str ,
-                                low_col_name:str):
+def fill_between_same_exterma(df_:pd.DataFrame, exterma_col:str = "HighLows", 
+                              low_label:int = -1, high_label = 1, date_col:str = "Date",
+                              low_column:str = "Close", high_column:str = "Close", **kwargs):
+    
+    from pycoin.Utils import check_isStandard_OHLCV_dataframe, get_by_datetimeRange
+    df = df_.copy()
+    check_isStandard_OHLCV_dataframe(df, True)
+    if date_col not in df.columns: df[date_col] = df.index
+    pos_grp = df.groupby(exterma_col)
+    highs_df, lows_df = pos_grp.get_group(high_label), pos_grp.get_group(low_label)
+    
+    # filling between lows
+    for i, (current_date, row) in enumerate(lows_df.iterrows()):
+        if len(lows_df)-1 in [i, i+1]: break
+        next_row = lows_df.iloc[i+1]
+        highs_between = get_by_datetimeRange(highs_df, current_date, next_row.Date) 
+        if highs_between.empty:
+            new_high = df.loc[current_date: next_row.Date, high_column].max()
+            df.loc[ df[high_column] == new_high, exterma_col] = high_label
             
-            high_df = df_.iloc[max_idx][high_col_name]
-            low_df = df_.iloc[min_idx][low_col_name]
+    # filling between highs
+    for i, (current_date, row) in enumerate(highs_df.iterrows()):
+        if len(highs_df)-1 in [i, i+1]: break
+        next_row = highs_df.iloc[i+1]
+        lows_between = get_by_datetimeRange(lows_df, current_date, next_row.Date)
+        if lows_between.empty:
+            new_low = df.loc[current_date:next_row.Date, low_column].min()
+            df.loc[ df[low_column] == new_low, exterma_col] = low_label
             
-            # concatnating mins and max and taking isna to check is we have two immediate pivots
-            isnan = pd.concat([high_df, low_df], axis = 1, sort = True).isna()
-            isnum = isnan == False
-            
-            if min_idx == [] or max_idx == []: return max_idx, min_idx
-            min_idx_ = min_idx.copy()
-            
-            j = 0
-            
-            # adding new min between two immediate max
-            for i, val in isnan.iterrows():
-                if i == max_idx[-1]: break
-                # if we have two immediate highs and two coresspanding nan in lows
-                if isnum[high_col_name].iloc[[j, j+1]].all() and isnan[low_col_name].iloc[[j, j+1]].all(): 
-                    ind = max_idx.index(i)
-                    new_min = df_.iloc[max_idx[ind]:max_idx[ind+1]][low_col_name].min() # finding new min
-                    # selecting the one that is in range of two maxs
-                    new_min_ind = [ind_ for ind_ in df_[df_[low_col_name] == new_min].index 
-                                   if ind_ in range(max_idx[ind],max_idx[ind+1])][0]
-                    
-                    min_idx_.append(new_min_ind)
-                    min_idx_.sort()
-                j+=1
-                
-            ############ doing the same for lows ######
-            max_idx_ = max_idx.copy()
-            j = 0
-            
-            # adding new max between two immediate min
-            for i, val in isnan.iterrows():
-                
-                if i == min_idx[-1]: break
-                # if we have two immediate lows and two coresspanding nan in highs
-                if isnum[low_col_name].iloc[[j, j+1]].all() and isnan[high_col_name].iloc[[j, j+1]].all():
-                    ind = min_idx.index(i)
-                    new_max = df_.iloc[min_idx[ind]: min_idx[ind+1]][high_col_name].max() # finding new max
-                    # selecting the one that is in range of two mins
-                    new_max_ind = [ind_ for ind_ in df_[df_[high_col_name] == new_max].index  
-                                   if ind_ in range(min_idx[ind], min_idx[ind+1]) ][0]
-                    
-                    max_idx_.append(new_max_ind)
-                    max_idx_.sort()
-                j+=1
-                
-            return max_idx_, min_idx_
-        
+    return df
         
         
 def remove_less_than_min_time(max_idx:list, min_idx:list, df_:pd.DataFrame,
-                                      datetime_col:str, high_col:str,
-                                      low_col:str, min_delta_t:dt.timedelta ):
+                              datetime_col:str, high_col:str,
+                              low_col:str, min_delta_t:dt.timedelta ):
             
             highs_df = df_.iloc[max_idx][[datetime_col,high_col]].drop_duplicates()
             lows_df = df_.iloc[min_idx][[datetime_col,low_col]].drop_duplicates()
