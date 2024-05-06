@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import ta
 from pycoin.data_gathering.trend_filters import remove_less_than_min_time, fill_between_same_exterma
-
+from pycoin.data_gathering.trend_evaluator import eval_trend_with_HighLows
 
 
 
@@ -126,6 +126,13 @@ class Kalmanfilter(_StrategyBASE):
         return dataframe
     
     
+    def evaluate_trend(self, dataframe: pd.DataFrame, HighLow_col:str = "HighLow", **kwargs):
+        self.df = eval_trend_with_HighLows(dataframe, HighLow_col = HighLow_col, **kwargs)
+        return self.df
+    
+    
+    
+    
     def add_adx_filter(self, dataframe: pd.DataFrame, remove_below:int = 25, window:int = 14,
                        high_col:str = "High", low_col:str = "Low", close_col:str = "Close"):
         """removes positions with low adx value.
@@ -155,6 +162,10 @@ class Kalmanfilter(_StrategyBASE):
                                    )        
         return fig
     
+    
+    def plot_trend(self, trend_col:str = "Trend", size = 5,**kwargs):
+        self.plot(size = size+10, **kwargs)
+        return self.plotter.plot_trend(column=trend_col, size=size, **kwargs)    
     
     
     def run_real_backtest(self, dataframe: pd.DataFrame, filter_column:str = "Close", **kwargs):
