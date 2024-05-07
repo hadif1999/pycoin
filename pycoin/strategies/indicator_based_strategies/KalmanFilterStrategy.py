@@ -131,6 +131,13 @@ class Kalmanfilter(_StrategyBASE):
         return self.df
     
     
+    def last_trend(self, dataframe: pd.DataFrame,
+                   max_dist:int = 40, trend_column:str = "Trend"):
+        nonside_trend = dataframe[dataframe[trend_column] != 0][trend_column]
+        last_trend = nonside_trend.iloc[-1]
+        lastTrend_dist = len(dataframe.loc[nonside_trend.index[-1]: ])
+        return last_trend if lastTrend_dist <= max_dist else dataframe[trend_column].iloc[-1]
+        
     
     
     def add_adx_filter(self, dataframe: pd.DataFrame, remove_below:int = 25, window:int = 14,
