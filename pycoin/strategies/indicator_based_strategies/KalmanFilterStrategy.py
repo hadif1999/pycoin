@@ -134,6 +134,7 @@ class Kalmanfilter(_StrategyBASE):
     def last_trend(self, dataframe: pd.DataFrame,
                    max_dist:int = 40, trend_column:str = "Trend"):
         nonside_trend = dataframe[dataframe[trend_column] != 0][trend_column]
+        if nonside_trend.empty: return dataframe[trend_column].iloc[-1]
         last_trend = nonside_trend.iloc[-1]
         lastTrend_dist = len(dataframe.loc[nonside_trend.index[-1]: ])
         return last_trend if lastTrend_dist <= max_dist else dataframe[trend_column].iloc[-1]
