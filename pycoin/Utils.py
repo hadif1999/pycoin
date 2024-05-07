@@ -225,7 +225,8 @@ def check_isStandard_OHLCV_dataframe(dataframe:pd.DataFrame, raise_empty: bool =
     if dataframe.empty:
         if raise_empty: raise ValueError("OHLCV dataframe can't be empty")
         else: return 
-    assert "date" in " ".join([dataframe.index.dtype.name, dataframe.index.name]).lower() \
+    assert "date" in " ".join([dataframe.index.dtype.name or '', 
+                               dataframe.index.name or '']).lower() \
     , "dataframe index type must be pd.Timestamp(datetime)"
     cols = ["Open", "High", "Low", "Close", "Volume"]
     for col in cols: assert col in dataframe.columns, f"column {col} not found in dataframe"
