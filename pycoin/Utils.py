@@ -208,10 +208,11 @@ def getBearish_CrossedPrice(df: pd.DataFrame, Price: float,
 def to_standard_OHLCV_dataframe(df: pd.DataFrame):
     df_ = df.copy()
     df_ = case_col_names(df_, "title")
-    if "datetime" not in df_.index.dtype.name.lower():
+    if "date" not in df_.index.dtype.name.lower():
         date_col = [col for col in df_.columns if "date" in col.lower()][0]
-        if "Datetime" not in df_.columns: 
-            df_["Datetime"] = pd.to_datetime(df[date_col].dt.strftime("%Y-%m-%d %H:%M:%S"))
+        if "Datetime" not in df_.columns:
+            df_[date_col] = pd.to_datetime(df_[date_col].dt.strftime("%Y-%m-%d %H:%M:%S")) 
+            df_["Datetime"] = pd.to_datetime(df_[date_col].dt.strftime("%Y-%m-%d %H:%M:%S"))
         df_.set_index("Datetime", inplace=True)
     check_isStandard_OHLCV_dataframe(df_)
     return df_
