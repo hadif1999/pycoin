@@ -158,6 +158,8 @@ class Kalmanfilter(_StrategyBASE):
 
     
     def plot(self, **kwargs):
+        
+        self.df.Name = self.dataName
         fig = super().plot(plot_entries=False ,**kwargs)
         
         fig.add_scatter(x = self.df.index, y = self.df["Kalman"],  
@@ -173,6 +175,7 @@ class Kalmanfilter(_StrategyBASE):
     
     
     def plot_trend(self, trend_col:str = "Trend", size = 5,**kwargs):
+        self.df.Name = self.dataName
         self.plot(size = size+10, **kwargs)
         return self.plotter.plot_trend(column=trend_col, size=size, **kwargs)    
     

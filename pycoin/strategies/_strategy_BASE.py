@@ -56,6 +56,7 @@ class _StrategyBASE:
     
     def plot(self, plot_entries:bool = False, **kwargs):
         from pycoin.plotting import Market_Plotter
+        self.df.Name = self.dataName
         self.plotter = Market_Plotter(self.df)
         fig = self.plotter.plot_market(**kwargs)
         
