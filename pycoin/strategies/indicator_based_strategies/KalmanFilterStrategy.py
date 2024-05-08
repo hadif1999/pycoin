@@ -48,6 +48,7 @@ class Kalmanfilter(_StrategyBASE):
       # main function to get filtered signal
     def generate_signal(self, dataframe:pd.DataFrame,
                         filter_column:str = "Close",
+                        fill_between_same_extermas:bool = True,
                         **kwargs):
         """generates 'LONG', 'SHORT' signal by finding high and lows and place buy orders
         at lows and and sell orders at highs. 
@@ -73,7 +74,7 @@ class Kalmanfilter(_StrategyBASE):
         if "HighLow" not in df.columns: df["HighLow"] = 0  
         df.loc[highs_df.index, "HighLow"] = 1
         df.loc[lows_df.index, "HighLow"] = -1
-        df = fill_between_same_exterma(df, "HighLow", low_column="Kalman", high_column="Kalman")
+        if fill_between_same_extermas: df = fill_between_same_exterma(df, "HighLow", low_column="Kalman", high_column="Kalman")
         
         # defining 'Position_side' column to define entries and exits
         if "Position_side" not in df.columns: df["Position_side"] = 0
