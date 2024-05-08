@@ -37,23 +37,23 @@ def eval_trend_with_HighLows(df:pd.DataFrame,*, HighLow_col:str = "HighLow",
 
     # getting end date of each trend
     endDates_uptrend = hl_pairs[hh_hl][[highDateCol,
-                                        lowDateCol]].fillna(pd.Timestamp(0)).tz_localize(None).max(axis=1)
+                                        lowDateCol]].fillna(pd.Timestamp(0)).max(axis=1)
     endDates_lowtrend = hl_pairs[lh_ll][[highDateCol,
-                                        lowDateCol]].fillna(pd.Timestamp(0)).tz_localize(None).max(axis=1)
+                                        lowDateCol]].fillna(pd.Timestamp(0)).max(axis=1)
     # initializing trend col
     if trend_col not in df.columns: df[trend_col] = sidetrend_label
     for i, row in hl_pairs.iterrows():
-        current_Date = row[[highDateCol, lowDateCol]].fillna(pd.Timestamp(0)).tz_localize(None).max()
+        current_Date = row[[highDateCol, lowDateCol]].fillna(pd.Timestamp(0)).max()
         if current_Date in endDates_uptrend.values:
             # finding begin date of trend
-            begin_Dates = hl_pairs[[highDateCol, lowDateCol]].iloc[i-1].tz_localize(None)
+            begin_Dates = hl_pairs[[highDateCol, lowDateCol]].iloc[i-1]
             if begin_Dates.isna().any(): begin_Date = begin_Dates.fillna(pd.Timestamp(0)).max()
             else: begin_Date = begin_Dates.min()
             end_Date = current_Date
             df.loc[begin_Date: end_Date, trend_col] = uptrend_label
             
         elif current_Date in endDates_lowtrend.values:
-            begin_Dates = hl_pairs[[highDateCol, lowDateCol]].iloc[i-1].tz_localize(None)
+            begin_Dates = hl_pairs[[highDateCol, lowDateCol]].iloc[i-1]
             if begin_Dates.isna().any(): begin_Date = begin_Dates.fillna(pd.Timestamp(0)).max()
             else: begin_Date = begin_Dates.min()
             end_Date = current_Date
