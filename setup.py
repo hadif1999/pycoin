@@ -72,11 +72,11 @@ base_requirements = [
     "wheel",
     "setuptools >= 64.0.0"
     ]
-    
+
 
 setup(
     name='pythoncoin',
-    version='v2.0.4',
+    version='v2.0.5',
     packages=find_packages(),
     license="MIT",
     author='Hadi Fathipour',
@@ -90,7 +90,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    tests_require=test, 
+    tests_require=test,
     install_requires=base_requirements,
     extras_require={
         "plot":plot,
@@ -99,5 +99,5 @@ setup(
         "hdf5":hdf5,
         "all":all_extra},
     python_requires='>=3.10',
-    
+
 )

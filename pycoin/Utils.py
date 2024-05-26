@@ -210,6 +210,7 @@ def to_standard_OHLCV_dataframe(df: pd.DataFrame):
     df_ = case_col_names(df_, "title")
     date_col = [col for col in df_.columns if "date" in col.lower()][0]
     df_[date_col] = pd.to_datetime(df_[date_col]).dt.strftime("%Y-%m-%d %H:%M:%S") 
+    df_["Date"] = df_[date_col]
     df_["Datetime"] = df_[date_col]
     df_.set_index("Datetime", inplace=True)    
     check_isStandard_OHLCV_dataframe(df_)
