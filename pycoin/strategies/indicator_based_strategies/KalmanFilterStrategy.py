@@ -49,6 +49,7 @@ class Kalmanfilter(_StrategyBASE):
     def generate_signal(self, dataframe:pd.DataFrame,
                         filter_column:str = "Close",
                         fill_between_same_extermas:bool = True,
+                        last_candles_dist_pct_denum:int = 1, date_col:str = "Date", 
                         **kwargs):
         """generates 'LONG', 'SHORT' signal by finding high and lows and place buy orders
         at lows and and sell orders at highs. 
@@ -74,9 +75,13 @@ class Kalmanfilter(_StrategyBASE):
         if "HighLow" not in df.columns: df["HighLow"] = 0  
         df.loc[highs_df.index, "HighLow"] = 1
         df.loc[lows_df.index, "HighLow"] = -1
-        if fill_between_same_extermas: df = fill_between_same_exterma(df, "HighLow", low_column="Kalman", high_column="Kalman")
-        df = self.filter_last_ncandles(df, 3, kwargs.get("highs_order", 25),
-                                       0.05, "Close")
+        if fill_between_same_extermas: df = fill_between_same_exterma(df, "HighLow",
+                                            low_column="Kalman", high_column="Kalman", 
+                                            date_col=date_col)
+        # filtering last n highlows if by price change and candles count
+        df = self.filter_last_nHighLows(df, 3, 
+             kwargs.get("highs_order", 25)//last_candles_dist_pct_denum,
+             0.05, filter_column, date_col, "HighLow")
         
         # defining 'Position_side' column to define entries and exits
         if "Position_side" not in df.columns: df["Position_side"] = 0
@@ -86,19 +91,20 @@ class Kalmanfilter(_StrategyBASE):
         return df
     
         
-    def filter_last_ncandles(self, df:pd.DataFrame, n:int = 3,
+    def filter_last_nHighLows(self, df:pd.DataFrame, n:int = 3,
                             min_candle_dist:int = 25, min_price_dist_pct = 0.05, 
-                            price_dist_col:str = "Close"):
+                            price_dist_col:str = "Close", date_col = "Date", 
+                            exterma_col:str = "HighLow"):
         df_ = df.copy()
-        to_check_df = df_[df_["HighLow"] != 0].iloc[-n:]
+        to_check_df = df_[df_[exterma_col] != 0].iloc[-n:]
         for i, (dt, row) in enumerate(to_check_df.iterrows()):
             if i == len(to_check_df)-1: break
             next_row = to_check_df.iloc[i+1]
-            diff_pct = abs(row[price_dist_col] - next_row[price_dist_col])/min(row[price_dist_col], 
+            diff_pct = abs(row[price_dist_col]-next_row[price_dist_col])/min(row[price_dist_col], 
                                                                         next_row[price_dist_col])
-            between_candles_df = df_.loc[dt: next_row.Date]
+            between_candles_df = df_.loc[row[date_col]: next_row[date_col]]
             if (diff_pct <= min_price_dist_pct) or (len(between_candles_df) < min_candle_dist):
-                df_.loc[next_row.Date, "HighLow"] = 0
+                df_.loc[next_row[date_col], exterma_col] = 0
         return df_
     
     
