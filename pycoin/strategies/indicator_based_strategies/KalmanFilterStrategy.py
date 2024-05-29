@@ -49,7 +49,11 @@ class Kalmanfilter(_StrategyBASE):
     def generate_signal(self, dataframe:pd.DataFrame,
                         filter_column:str = "Close",
                         fill_between_same_extermas:bool = True,
-                        last_candles_dist_pct_denum:int = 1, date_col:str = "Date", 
+                        date_col:str = "Date",
+                        last_nHighLows_filter:dict = {"enabled":True,
+                                                      "n":3, 
+                                                      "min_ncandles_between":5,
+                                                      "min_price_dist_pct":0.01},
                         **kwargs):
         """generates 'LONG', 'SHORT' signal by finding high and lows and place buy orders
         at lows and and sell orders at highs. 
@@ -75,14 +79,16 @@ class Kalmanfilter(_StrategyBASE):
         if "HighLow" not in df.columns: df["HighLow"] = 0  
         df.loc[highs_df.index, "HighLow"] = 1
         df.loc[lows_df.index, "HighLow"] = -1
+        # filtering last n highlows if by price change and candles count
+        if last_nHighLows_filter.get("enabled", True):
+            df = self.filter_last_nHighLows(df, last_nHighLows_filter.get('n', 3), 
+             last_nHighLows_filter.get("min_ncandles_between", 2),
+             last_nHighLows_filter.get("min_price_dist_pct", 0.01),
+             filter_column, date_col, "HighLow")
+        # filling between to immediate same extermas        
         if fill_between_same_extermas: df = fill_between_same_exterma(df, "HighLow",
                                             low_column="Kalman", high_column="Kalman", 
                                             date_col=date_col)
-        # filtering last n highlows if by price change and candles count
-        df = self.filter_last_nHighLows(df, 3, 
-             kwargs.get("highs_order", 25)//last_candles_dist_pct_denum,
-             0.05, filter_column, date_col, "HighLow")
-        
         # defining 'Position_side' column to define entries and exits
         if "Position_side" not in df.columns: df["Position_side"] = 0
         df.loc[df["HighLow"] == -1, "Position_side"] = 1
